@@ -13,6 +13,14 @@
 
 + (instancetype)fromTestSuite:(NSString *)testSuite finishingAt:(NSString *)finishTime runCount:(NSNumber *)runCount failures:(NSNumber *)failuresCount unexpected:(NSNumber *)unexpectedFailureCount testDuration:(NSNumber *)testDuration totalDuration:(NSNumber *)totalDuration
 {
+  NSParameterAssert(testSuite);
+  NSParameterAssert(finishTime);
+  NSParameterAssert(runCount);
+  NSParameterAssert(failuresCount);
+  NSParameterAssert(unexpectedFailureCount);
+  NSParameterAssert(testDuration);
+  NSParameterAssert(totalDuration);
+
   NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
   dateFormatter.dateFormat = @"YYYY-MM-DD";
   dateFormatter.lenient = YES;
