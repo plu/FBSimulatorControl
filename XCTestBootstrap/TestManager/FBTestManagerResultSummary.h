@@ -24,7 +24,7 @@ NS_ASSUME_NONNULL_BEGIN
 + (instancetype)fromTestSuite:(NSString *)testSuite finishingAt:(NSString *)finishTime runCount:(NSNumber *)runCount failures:(NSNumber *)failuresCount unexpected:(NSNumber *)unexpectedFailureCount testDuration:(NSNumber *)testDuration totalDuration:(NSNumber *)totalDuration;
 
 @property (nonatomic, copy, readonly) NSString *testSuite;
-@property (nonatomic, copy, readonly) NSDate *finishTime;
+@property (nonatomic, copy, readonly) NSString *finishTime;
 @property (nonatomic, assign, readonly) NSInteger runCount;
 @property (nonatomic, assign, readonly) NSInteger failureCount;
 @property (nonatomic, assign, readonly) NSInteger unexpected;
