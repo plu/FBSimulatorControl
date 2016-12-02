@@ -21,13 +21,9 @@
   NSParameterAssert(testDuration);
   NSParameterAssert(totalDuration);
 
-  NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
-  dateFormatter.dateFormat = @"YYYY-MM-DD";
-  dateFormatter.lenient = YES;
-
   return [[FBTestManagerResultSummary alloc]
     initWithTestSuite:testSuite
-    finishTime:[dateFormatter dateFromString:finishTime]
+    finishTime:finishTime
     runCount:runCount.integerValue
     failureCount:failuresCount.integerValue
     unexpected:unexpectedFailureCount.integerValue
@@ -35,7 +31,7 @@
     totalDuration:totalDuration.doubleValue];
 }
 
-- (instancetype)initWithTestSuite:(NSString *)testSuite finishTime:(NSDate *)finishTime runCount:(NSInteger)runCount failureCount:(NSInteger)failureCount unexpected:(NSInteger)unexpected testDuration:(NSTimeInterval)testDuration totalDuration:(NSTimeInterval)totalDuration
+- (instancetype)initWithTestSuite:(NSString *)testSuite finishTime:(NSString *)finishTime runCount:(NSInteger)runCount failureCount:(NSInteger)failureCount unexpected:(NSInteger)unexpected testDuration:(NSTimeInterval)testDuration totalDuration:(NSTimeInterval)totalDuration
 {
   self = [super init];
   if (!self) {
