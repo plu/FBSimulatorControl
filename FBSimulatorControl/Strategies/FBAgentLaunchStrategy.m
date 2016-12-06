@@ -119,6 +119,52 @@
   return process;
 }
 
+- (nullable NSString *)launchConsumingStdout:(FBAgentLaunchConfiguration *)agentLaunch error:(NSError **)error
+{
+  // Construct a pipe to stdout and read asynchronously from it.
+  // Synchronize on the mutable string.
+  NSPipe *stdOutPipe = [NSPipe pipe];
+  FBAccumilatingFileDataConsumer *consumer = [FBAccumilatingFileDataConsumer new];
+  FBFileReader *reader = [FBFileReader readerWithFileHandle:stdOutPipe.fileHandleForReading consumer:consumer];
+  NSDictionary *options = [agentLaunch simDeviceLaunchOptionsWithStdOut:stdOutPipe.fileHandleForWriting stdErr:nil];
+
+  // Start reading the pipe
+  NSError *innerError = nil;
+  if (![reader startReadingWithError:&innerError]) {
+    return [[[FBSimulatorError
+      describeFormat:@"Could not start reading stdout of %@", agentLaunch]
+      causedBy:innerError]
+      fail:error];
+  }
+
+  // The Process launches and terminates synchronously
+  pid_t processIdentifier = [[FBAgentLaunchStrategy withSimulator:self.simulator]
+    spawnShortRunningWithPath:agentLaunch.agentBinary.path
+    options:options
+    timeout:FBControlCoreGlobalConfiguration.fastTimeout
+    error:&innerError];
+
+  // Stop reading the pipe
+  if (![reader stopReadingWithError:&innerError]) {
+    return [[[FBSimulatorError
+      describeFormat:@"Could not stop reading stdout of %@", agentLaunch]
+      causedBy:innerError]
+      fail:error];
+  }
+
+  // Fail on non-zero pid.
+  if (processIdentifier <= 0) {
+    return [[[FBSimulatorError
+      describeFormat:@"Running %@ %@ failed", agentLaunch.agentBinary.name, [FBCollectionInformation oneLineDescriptionFromArray:agentLaunch.arguments]]
+      causedBy:innerError]
+      fail:error];
+  }
+
+  return [[NSString alloc] initWithData:consumer.data encoding:NSUTF8StringEncoding];
+}
+
+#pragma mark Private
+
 - (nullable FBProcessInfo *)spawnLongRunningWithPath:(NSString *)launchPath options:(nullable NSDictionary<NSString *, id> *)options terminationHandler:(nullable FBAgentLaunchCallback)terminationHandler error:(NSError **)error
 {
   return [self processInfoForProcessIdentifier:[self.simulator.device spawnWithPath:launchPath options:options terminationHandler:terminationHandler error:error] error:error];
@@ -147,8 +193,6 @@
 
   return processIdentifier;
 }
-
-#pragma mark Private
 
 - (FBProcessInfo *)processInfoForProcessIdentifier:(pid_t)processIdentifier error:(NSError **)error
 {

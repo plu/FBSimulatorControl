@@ -7,7 +7,7 @@
  * of patent rights can be found in the PATENTS file in the same directory.
  */
 
-#import "FBSimulatorInteraction+Setup.h"
+#import "FBSimulatorInteraction+Settings.h"
 
 #import <CoreSimulator/SimDevice.h>
 
@@ -17,9 +17,9 @@
 #import "FBSimulatorError.h"
 #import "FBSimulatorInteraction+Private.h"
 #import "FBSimulatorBootConfiguration.h"
-#import "FBPlistModificationStrategy.h"
+#import "FBDefaultsModificationStrategy.h"
 
-@implementation FBSimulatorInteraction (Setup)
+@implementation FBSimulatorInteraction (Settings)
 
 - (instancetype)prepareForBoot:(FBSimulatorBootConfiguration *)configuration
 {
@@ -43,10 +43,10 @@
 
 - (instancetype)authorizeLocationSettings:(NSArray<NSString *> *)bundleIDs
 {
-  return [self interactWithShutdownSimulator:^ BOOL (NSError **error, FBSimulator *simulator) {
+  return [self interactWithSimulator:^ BOOL (NSError **error, FBSimulator *simulator) {
     return [[FBLocationServicesModificationStrategy
       strategyWithSimulator:simulator]
-      overideLocalizations:bundleIDs error:error];
+      approveLocationServicesForBundleIDs:bundleIDs error:error];
   }];
 }
 
@@ -58,7 +58,7 @@
 
 - (instancetype)overrideWatchDogTimerForApplications:(NSArray<NSString *> *)bundleIDs withTimeout:(NSTimeInterval)timeout
 {
-  return [self interactWithShutdownSimulator:^ BOOL (NSError **error, FBSimulator *simulator) {
+  return [self interactWithSimulator:^ BOOL (NSError **error, FBSimulator *simulator) {
     return [[FBWatchdogOverrideModificationStrategy
       strategyWithSimulator:simulator]
       overrideWatchDogTimerForApplications:bundleIDs timeout:timeout error:error];
@@ -67,20 +67,10 @@
 
 - (instancetype)setupKeyboard
 {
-  return [self interactWithShutdownSimulator:^ BOOL (NSError **error, FBSimulator *simulator) {
+  return [self interactWithSimulator:^ BOOL (NSError **error, FBSimulator *simulator) {
     return [[FBKeyboardSettingsModificationStrategy
       strategyWithSimulator:simulator]
       setupKeyboardWithError:error];
-  }];
-}
-
-- (instancetype)editPropertyListFileRelativeFromRootPath:(NSString *)relativePath amendWithBlock:( void(^)(NSMutableDictionary *) )block
-{
-  return [self interactWithShutdownSimulator:^ BOOL (NSError **error, FBSimulator *simulator) {
-    return [[FBPlistModificationStrategy strategyWithSimulator:simulator]
-      amendRelativeToPath:relativePath
-      error:error
-      amendWithBlock:block];
   }];
 }
 

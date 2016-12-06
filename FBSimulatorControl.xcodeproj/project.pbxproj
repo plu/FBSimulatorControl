@@ -76,8 +76,6 @@
 		AA19D7031D61AFF200229B59 /* MacUnitTestFixture.xctest in Resources */ = {isa = PBXBuildFile; fileRef = AA19D7011D61AFF200229B59 /* MacUnitTestFixture.xctest */; };
 		AA19DA861C7740BB009BB89B /* FBSimulatorPoolTestCase.m in Sources */ = {isa = PBXBuildFile; fileRef = AA19DA851C7740BB009BB89B /* FBSimulatorPoolTestCase.m */; };
 		AA19DA881C77450A009BB89B /* FBSimulatorPool+Private.h in Headers */ = {isa = PBXBuildFile; fileRef = AA19DA871C77450A009BB89B /* FBSimulatorPool+Private.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		AA1A1C441DAB7D6200896C1E /* FBMultiFileReader.h in Headers */ = {isa = PBXBuildFile; fileRef = AA1A1C421DAB7D6200896C1E /* FBMultiFileReader.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		AA1A1C451DAB7D6200896C1E /* FBMultiFileReader.m in Sources */ = {isa = PBXBuildFile; fileRef = AA1A1C431DAB7D6200896C1E /* FBMultiFileReader.m */; };
 		AA1B5D911CF6DD800073A203 /* FBSimulatorDeletionStrategy.h in Headers */ = {isa = PBXBuildFile; fileRef = AA1B5D8F1CF6DD800073A203 /* FBSimulatorDeletionStrategy.h */; };
 		AA1B5D921CF6DD800073A203 /* FBSimulatorDeletionStrategy.m in Sources */ = {isa = PBXBuildFile; fileRef = AA1B5D901CF6DD800073A203 /* FBSimulatorDeletionStrategy.m */; };
 		AA1D55591CD2755D00B84404 /* FBSimulatorTestInjectionTests.m in Sources */ = {isa = PBXBuildFile; fileRef = AA1D55581CD2755D00B84404 /* FBSimulatorTestInjectionTests.m */; };
@@ -87,6 +85,8 @@
 		AA1FC9171D911B0A00A5FCC3 /* FBKeychainClearStrategy.m in Sources */ = {isa = PBXBuildFile; fileRef = AA1FC9151D911B0A00A5FCC3 /* FBKeychainClearStrategy.m */; };
 		AA1FC91C1D911F6F00A5FCC3 /* FBInteraction.h in Headers */ = {isa = PBXBuildFile; fileRef = AA1FC91A1D911F6F00A5FCC3 /* FBInteraction.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		AA1FC91D1D911F6F00A5FCC3 /* FBInteraction.m in Sources */ = {isa = PBXBuildFile; fileRef = AA1FC91B1D911F6F00A5FCC3 /* FBInteraction.m */; };
+		AA25770A1DF16B1300789490 /* FBDefaultsModificationStrategy.h in Headers */ = {isa = PBXBuildFile; fileRef = AA2577081DF16B1300789490 /* FBDefaultsModificationStrategy.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		AA25770B1DF16B1300789490 /* FBDefaultsModificationStrategy.m in Sources */ = {isa = PBXBuildFile; fileRef = AA2577091DF16B1300789490 /* FBDefaultsModificationStrategy.m */; };
 		AA2942811D00AB0800880984 /* FBiOSTarget.m in Sources */ = {isa = PBXBuildFile; fileRef = AA2942801D00AB0800880984 /* FBiOSTarget.m */; };
 		AA2C9A531D33F59400A1355C /* FBSimulator+Connection.h in Headers */ = {isa = PBXBuildFile; fileRef = AA2C9A511D33F59400A1355C /* FBSimulator+Connection.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		AA2C9A541D33F59400A1355C /* FBSimulator+Connection.m in Sources */ = {isa = PBXBuildFile; fileRef = AA2C9A521D33F59400A1355C /* FBSimulator+Connection.m */; };
@@ -120,8 +120,6 @@
 		AA4242FE1C529366008ABD80 /* FBFramebufferVideo.m in Sources */ = {isa = PBXBuildFile; fileRef = AA4242FC1C529366008ABD80 /* FBFramebufferVideo.m */; };
 		AA4243041C5295FC008ABD80 /* CoreMedia.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AA4243031C5295FC008ABD80 /* CoreMedia.framework */; };
 		AA4243061C529644008ABD80 /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AA4243051C529644008ABD80 /* CoreVideo.framework */; };
-		AA43B5921DEE0BFA00509713 /* FBPlistModificationStrategy.h in Headers */ = {isa = PBXBuildFile; fileRef = AA43B5901DEE0BFA00509713 /* FBPlistModificationStrategy.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		AA43B5931DEE0BFA00509713 /* FBPlistModificationStrategy.m in Sources */ = {isa = PBXBuildFile; fileRef = AA43B5911DEE0BFA00509713 /* FBPlistModificationStrategy.m */; };
 		AA46BF601D6DDC6A00C41DAF /* FBTestManagerContext.h in Headers */ = {isa = PBXBuildFile; fileRef = AA46BF5E1D6DDC6A00C41DAF /* FBTestManagerContext.h */; };
 		AA46BF611D6DDC6A00C41DAF /* FBTestManagerContext.m in Sources */ = {isa = PBXBuildFile; fileRef = AA46BF5F1D6DDC6A00C41DAF /* FBTestManagerContext.m */; };
 		AA4A7E2D1DD9F4EB001F9D8E /* FBFileReader.h in Headers */ = {isa = PBXBuildFile; fileRef = AA4A7E2B1DD9F4EB001F9D8E /* FBFileReader.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -218,8 +216,8 @@
 		AA9517671C15F54600A89CAD /* FBSimulatorInteraction+Applications.h in Headers */ = {isa = PBXBuildFile; fileRef = AA9516E41C15F54600A89CAD /* FBSimulatorInteraction+Applications.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		AA9517681C15F54600A89CAD /* FBSimulatorInteraction+Applications.m in Sources */ = {isa = PBXBuildFile; fileRef = AA9516E51C15F54600A89CAD /* FBSimulatorInteraction+Applications.m */; };
 		AA95176D1C15F54600A89CAD /* FBSimulatorInteraction+Private.h in Headers */ = {isa = PBXBuildFile; fileRef = AA9516EA1C15F54600A89CAD /* FBSimulatorInteraction+Private.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		AA95176E1C15F54600A89CAD /* FBSimulatorInteraction+Setup.h in Headers */ = {isa = PBXBuildFile; fileRef = AA9516EB1C15F54600A89CAD /* FBSimulatorInteraction+Setup.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		AA95176F1C15F54600A89CAD /* FBSimulatorInteraction+Setup.m in Sources */ = {isa = PBXBuildFile; fileRef = AA9516EC1C15F54600A89CAD /* FBSimulatorInteraction+Setup.m */; };
+		AA95176E1C15F54600A89CAD /* FBSimulatorInteraction+Settings.h in Headers */ = {isa = PBXBuildFile; fileRef = AA9516EB1C15F54600A89CAD /* FBSimulatorInteraction+Settings.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		AA95176F1C15F54600A89CAD /* FBSimulatorInteraction+Settings.m in Sources */ = {isa = PBXBuildFile; fileRef = AA9516EC1C15F54600A89CAD /* FBSimulatorInteraction+Settings.m */; };
 		AA9517701C15F54600A89CAD /* FBSimulatorInteraction+Upload.h in Headers */ = {isa = PBXBuildFile; fileRef = AA9516ED1C15F54600A89CAD /* FBSimulatorInteraction+Upload.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		AA9517711C15F54600A89CAD /* FBSimulatorInteraction+Upload.m in Sources */ = {isa = PBXBuildFile; fileRef = AA9516EE1C15F54600A89CAD /* FBSimulatorInteraction+Upload.m */; };
 		AA9517741C15F54600A89CAD /* FBSimulatorInteraction.h in Headers */ = {isa = PBXBuildFile; fileRef = AA9516F11C15F54600A89CAD /* FBSimulatorInteraction.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -674,8 +672,6 @@
 		AA19DA841C7740BB009BB89B /* FBSimulatorPoolTestCase.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FBSimulatorPoolTestCase.h; sourceTree = "<group>"; };
 		AA19DA851C7740BB009BB89B /* FBSimulatorPoolTestCase.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FBSimulatorPoolTestCase.m; sourceTree = "<group>"; };
 		AA19DA871C77450A009BB89B /* FBSimulatorPool+Private.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "FBSimulatorPool+Private.h"; sourceTree = "<group>"; };
-		AA1A1C421DAB7D6200896C1E /* FBMultiFileReader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FBMultiFileReader.h; sourceTree = "<group>"; };
-		AA1A1C431DAB7D6200896C1E /* FBMultiFileReader.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FBMultiFileReader.m; sourceTree = "<group>"; };
 		AA1B5D8F1CF6DD800073A203 /* FBSimulatorDeletionStrategy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FBSimulatorDeletionStrategy.h; sourceTree = "<group>"; };
 		AA1B5D901CF6DD800073A203 /* FBSimulatorDeletionStrategy.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FBSimulatorDeletionStrategy.m; sourceTree = "<group>"; };
 		AA1D55581CD2755D00B84404 /* FBSimulatorTestInjectionTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FBSimulatorTestInjectionTests.m; sourceTree = "<group>"; };
@@ -686,6 +682,8 @@
 		AA1FC9151D911B0A00A5FCC3 /* FBKeychainClearStrategy.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FBKeychainClearStrategy.m; sourceTree = "<group>"; };
 		AA1FC91A1D911F6F00A5FCC3 /* FBInteraction.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FBInteraction.h; sourceTree = "<group>"; };
 		AA1FC91B1D911F6F00A5FCC3 /* FBInteraction.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FBInteraction.m; sourceTree = "<group>"; };
+		AA2577081DF16B1300789490 /* FBDefaultsModificationStrategy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FBDefaultsModificationStrategy.h; sourceTree = "<group>"; };
+		AA2577091DF16B1300789490 /* FBDefaultsModificationStrategy.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FBDefaultsModificationStrategy.m; sourceTree = "<group>"; };
 		AA2942801D00AB0800880984 /* FBiOSTarget.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FBiOSTarget.m; sourceTree = "<group>"; };
 		AA2C9A511D33F59400A1355C /* FBSimulator+Connection.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "FBSimulator+Connection.h"; sourceTree = "<group>"; };
 		AA2C9A521D33F59400A1355C /* FBSimulator+Connection.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "FBSimulator+Connection.m"; sourceTree = "<group>"; };
@@ -720,8 +718,6 @@
 		AA4242FC1C529366008ABD80 /* FBFramebufferVideo.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FBFramebufferVideo.m; sourceTree = "<group>"; };
 		AA4243031C5295FC008ABD80 /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = System/Library/Frameworks/CoreMedia.framework; sourceTree = SDKROOT; };
 		AA4243051C529644008ABD80 /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = System/Library/Frameworks/CoreVideo.framework; sourceTree = SDKROOT; };
-		AA43B5901DEE0BFA00509713 /* FBPlistModificationStrategy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FBPlistModificationStrategy.h; sourceTree = "<group>"; };
-		AA43B5911DEE0BFA00509713 /* FBPlistModificationStrategy.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FBPlistModificationStrategy.m; sourceTree = "<group>"; };
 		AA46BF5E1D6DDC6A00C41DAF /* FBTestManagerContext.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FBTestManagerContext.h; sourceTree = "<group>"; };
 		AA46BF5F1D6DDC6A00C41DAF /* FBTestManagerContext.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FBTestManagerContext.m; sourceTree = "<group>"; };
 		AA4876491BAC7399007F7D23 /* FBSimulatorControl-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "FBSimulatorControl-Info.plist"; sourceTree = "<group>"; };
@@ -964,8 +960,8 @@
 		AA9516E41C15F54600A89CAD /* FBSimulatorInteraction+Applications.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "FBSimulatorInteraction+Applications.h"; sourceTree = "<group>"; };
 		AA9516E51C15F54600A89CAD /* FBSimulatorInteraction+Applications.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "FBSimulatorInteraction+Applications.m"; sourceTree = "<group>"; };
 		AA9516EA1C15F54600A89CAD /* FBSimulatorInteraction+Private.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "FBSimulatorInteraction+Private.h"; sourceTree = "<group>"; };
-		AA9516EB1C15F54600A89CAD /* FBSimulatorInteraction+Setup.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "FBSimulatorInteraction+Setup.h"; sourceTree = "<group>"; };
-		AA9516EC1C15F54600A89CAD /* FBSimulatorInteraction+Setup.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "FBSimulatorInteraction+Setup.m"; sourceTree = "<group>"; };
+		AA9516EB1C15F54600A89CAD /* FBSimulatorInteraction+Settings.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "FBSimulatorInteraction+Settings.h"; sourceTree = "<group>"; };
+		AA9516EC1C15F54600A89CAD /* FBSimulatorInteraction+Settings.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "FBSimulatorInteraction+Settings.m"; sourceTree = "<group>"; };
 		AA9516ED1C15F54600A89CAD /* FBSimulatorInteraction+Upload.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "FBSimulatorInteraction+Upload.h"; sourceTree = "<group>"; };
 		AA9516EE1C15F54600A89CAD /* FBSimulatorInteraction+Upload.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "FBSimulatorInteraction+Upload.m"; sourceTree = "<group>"; };
 		AA9516F11C15F54600A89CAD /* FBSimulatorInteraction.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FBSimulatorInteraction.h; sourceTree = "<group>"; };
@@ -1724,12 +1720,12 @@
 				AA0333411CC54C59009567E3 /* FBApplicationLaunchStrategy.m */,
 				AA6A3B311CC1596F00E016C4 /* FBCoreSimulatorTerminationStrategy.h */,
 				AA6A3B321CC1596F00E016C4 /* FBCoreSimulatorTerminationStrategy.m */,
+				AA2577081DF16B1300789490 /* FBDefaultsModificationStrategy.h */,
+				AA2577091DF16B1300789490 /* FBDefaultsModificationStrategy.m */,
 				AA01A11F1D7896AD0030236F /* FBFramebufferConnectStrategy.h */,
 				AA01A1201D7896AD0030236F /* FBFramebufferConnectStrategy.m */,
 				AA1FC9141D911B0A00A5FCC3 /* FBKeychainClearStrategy.h */,
 				AA1FC9151D911B0A00A5FCC3 /* FBKeychainClearStrategy.m */,
-				AA43B5901DEE0BFA00509713 /* FBPlistModificationStrategy.h */,
-				AA43B5911DEE0BFA00509713 /* FBPlistModificationStrategy.m */,
 				AA6A3B351CC1597000E016C4 /* FBSimulatorBootStrategy.h */,
 				AA6A3B361CC1597000E016C4 /* FBSimulatorBootStrategy.m */,
 				AA1B5D8F1CF6DD800073A203 /* FBSimulatorDeletionStrategy.h */,
@@ -1883,8 +1879,8 @@
 				AAF2D3541C33EA3100434516 /* FBSimulatorInteraction+Lifecycle.h */,
 				AAF2D3551C33EA3100434516 /* FBSimulatorInteraction+Lifecycle.m */,
 				AA9516EA1C15F54600A89CAD /* FBSimulatorInteraction+Private.h */,
-				AA9516EB1C15F54600A89CAD /* FBSimulatorInteraction+Setup.h */,
-				AA9516EC1C15F54600A89CAD /* FBSimulatorInteraction+Setup.m */,
+				AA9516EB1C15F54600A89CAD /* FBSimulatorInteraction+Settings.h */,
+				AA9516EC1C15F54600A89CAD /* FBSimulatorInteraction+Settings.m */,
 				AA9516ED1C15F54600A89CAD /* FBSimulatorInteraction+Upload.h */,
 				AA9516EE1C15F54600A89CAD /* FBSimulatorInteraction+Upload.m */,
 				EE12774E1C931BEC00DE52A1 /* FBSimulatorInteraction+XCTest.h */,
@@ -2553,8 +2549,6 @@
 				AA4A7E2C1DD9F4EB001F9D8E /* FBFileReader.m */,
 				AA391AD01CEF4CBC00817691 /* FBLocalizationOverride.h */,
 				AA391AD11CEF4CBC00817691 /* FBLocalizationOverride.m */,
-				AA1A1C421DAB7D6200896C1E /* FBMultiFileReader.h */,
-				AA1A1C431DAB7D6200896C1E /* FBMultiFileReader.m */,
 				AAF4C4DD1CDBA1A7004F4AF3 /* FBRunLoopSpinner.h */,
 				AAF4C4DE1CDBA1A7004F4AF3 /* FBRunLoopSpinner.m */,
 				AAD0DE011CEB064200C28B58 /* FBSubstringUtilities.h */,
@@ -2642,6 +2636,7 @@
 				EE12774C1C931BDC00DE52A1 /* FBSimulatorControlOperator.h in Headers */,
 				AA9517901C15F54600A89CAD /* FBSimulatorHistory+Private.h in Headers */,
 				AA2C9A531D33F59400A1355C /* FBSimulator+Connection.h in Headers */,
+				AA25770A1DF16B1300789490 /* FBDefaultsModificationStrategy.h in Headers */,
 				AA9517671C15F54600A89CAD /* FBSimulatorInteraction+Applications.h in Headers */,
 				AAFE93B61CE4954500A50F76 /* FBSimulatorEraseStrategy.h in Headers */,
 				AA19DA881C77450A009BB89B /* FBSimulatorPool+Private.h in Headers */,
@@ -2653,7 +2648,7 @@
 				AA9517741C15F54600A89CAD /* FBSimulatorInteraction.h in Headers */,
 				AA95174E1C15F54600A89CAD /* FBSimulatorConfiguration+CoreSimulator.h in Headers */,
 				EE1277501C931BEC00DE52A1 /* FBSimulatorInteraction+XCTest.h in Headers */,
-				AA95176E1C15F54600A89CAD /* FBSimulatorInteraction+Setup.h in Headers */,
+				AA95176E1C15F54600A89CAD /* FBSimulatorInteraction+Settings.h in Headers */,
 				AA07B3451D531FEA007FB614 /* FBSimulatorInflationStrategy.h in Headers */,
 				AA9517531C15F54600A89CAD /* FBSimulatorControlConfiguration.h in Headers */,
 				AA1B5D911CF6DD800073A203 /* FBSimulatorDeletionStrategy.h in Headers */,
@@ -2676,7 +2671,6 @@
 				AA83EB1D1D6F608400E5C864 /* FBSimulatorTestRunStrategy.h in Headers */,
 				AA9517911C15F54600A89CAD /* FBSimulatorHistory+Queries.h in Headers */,
 				AABD8DF91C592DBA008527CD /* FBFramebufferImage.h in Headers */,
-				AA43B5921DEE0BFA00509713 /* FBPlistModificationStrategy.h in Headers */,
 				AACA2C371C2976B100979C45 /* FBAddVideoPolyfill.h in Headers */,
 				AAD4978A1C50F14B00ABC1A7 /* FBMutableSimulatorEventSink.h in Headers */,
 				AA1FC9161D911B0A00A5FCC3 /* FBKeychainClearStrategy.h in Headers */,
@@ -2752,7 +2746,6 @@
 				AA6F98E71D2B9B6500464B0F /* FBApplicationDescriptor.h in Headers */,
 				AAD0DE031CEB064200C28B58 /* FBSubstringUtilities.h in Headers */,
 				EEBD605B1C9062E900298A07 /* FBASLParser.h in Headers */,
-				AA1A1C441DAB7D6200896C1E /* FBMultiFileReader.h in Headers */,
 				AACA33581C96F8D100DC9704 /* FBFileFinder.h in Headers */,
 				EEBD60661C9062E900298A07 /* FBProcessFetcher+Helpers.h in Headers */,
 				AA63FD741D00A3D5000B3842 /* FBiOSTargetQuery.h in Headers */,
@@ -3166,7 +3159,6 @@
 				AAACBEB51CA13E5D00DA7686 /* FBSimulatorInteraction+Bridge.m in Sources */,
 				AA9517751C15F54600A89CAD /* FBSimulatorInteraction.m in Sources */,
 				AA95175A1C15F54600A89CAD /* FBSimulatorEventRelay.m in Sources */,
-				AA43B5931DEE0BFA00509713 /* FBPlistModificationStrategy.m in Sources */,
 				AAD4978B1C50F14B00ABC1A7 /* FBMutableSimulatorEventSink.m in Sources */,
 				AAFE93B71CE4954500A50F76 /* FBSimulatorEraseStrategy.m in Sources */,
 				AAB207C11C2099A9007C7908 /* FBSimulatorLoggingEventSink.m in Sources */,
@@ -3178,8 +3170,9 @@
 				AA1877DF1D2CECD9008F44A2 /* FBSimulatorHID.m in Sources */,
 				AAF2D3571C33EA3100434516 /* FBSimulatorInteraction+Lifecycle.m in Sources */,
 				AA95174F1C15F54600A89CAD /* FBSimulatorConfiguration+CoreSimulator.m in Sources */,
-				AA95176F1C15F54600A89CAD /* FBSimulatorInteraction+Setup.m in Sources */,
+				AA95176F1C15F54600A89CAD /* FBSimulatorInteraction+Settings.m in Sources */,
 				AAB73D701D5B983C00DD768D /* FBFramebufferFrameGenerator.m in Sources */,
+				AA25770B1DF16B1300789490 /* FBDefaultsModificationStrategy.m in Sources */,
 				AA95175F1C15F54600A89CAD /* FBSimulatorHistoryGenerator.m in Sources */,
 				EE1277511C931BEC00DE52A1 /* FBSimulatorInteraction+XCTest.m in Sources */,
 				AA83EB1E1D6F608400E5C864 /* FBSimulatorTestRunStrategy.m in Sources */,
@@ -3323,7 +3316,6 @@
 				AAF4C4E01CDBA1A7004F4AF3 /* FBRunLoopSpinner.m in Sources */,
 				EEBD607F1C9062E900298A07 /* FBControlCoreError.m in Sources */,
 				EE2EC7B11CAC5119009A7BB1 /* FBWeakFramework+ApplePrivateFrameworks.m in Sources */,
-				AA1A1C451DAB7D6200896C1E /* FBMultiFileReader.m in Sources */,
 				AACA33591C96F8D100DC9704 /* FBFileFinder.m in Sources */,
 				EEBD60691C9062E900298A07 /* FBProcessFetcher.m in Sources */,
 				EEBD60601C9062E900298A07 /* FBDiagnostic.m in Sources */,

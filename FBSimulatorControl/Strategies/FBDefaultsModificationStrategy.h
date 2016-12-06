@@ -15,9 +15,9 @@ NS_ASSUME_NONNULL_BEGIN
 @class FBSimulator;
 
 /**
- Modifies a Plist on the Simulator.
+ A class for modifying defaults that reside on a Simulator.
  */
-@interface FBPlistModificationStrategy : NSObject
+@interface FBDefaultsModificationStrategy : NSObject
 
 /**
  A Strategy for modifying a plist.
@@ -27,22 +27,12 @@ NS_ASSUME_NONNULL_BEGIN
  */
 + (instancetype)strategyWithSimulator:(FBSimulator *)simulator;
 
-/**
- Amends a Plist, relative to a root path.
-
- @param relativePath the relative path from the Simulator root.
- @param error an error out for any error that occurs.
- @param block the block to use for modifications.
- @return YES if successful, NO otherwise.
- */
-- (BOOL)amendRelativeToPath:(NSString *)relativePath error:(NSError **)error amendWithBlock:( void(^)(NSMutableDictionary<NSString *, id> *) )block;
-
 @end
 
 /**
  Modifies the Global Preferences for a Localization
  */
-@interface FBLocalizationDefaultsModificationStrategy : FBPlistModificationStrategy
+@interface FBLocalizationDefaultsModificationStrategy : FBDefaultsModificationStrategy
 
 /**
  Adds a Localization Override.
@@ -56,25 +46,25 @@ NS_ASSUME_NONNULL_BEGIN
 @end
 
 /**
- Modifies the locationd plist.
+ Modifies the defaults for the locationd daemon.
  */
-@interface FBLocationServicesModificationStrategy : FBPlistModificationStrategy
+@interface FBLocationServicesModificationStrategy : FBDefaultsModificationStrategy
 
 /**
- Adds a Localization Override.
+ Approves Location Services for Applications.
 
  @param bundleIDs an NSArray<NSString> of bundle IDs to to authorize location settings for.
  @param error an error out for any error that occurs.
  @return YES if successful, NO otherwise.
  */
-- (BOOL)overideLocalizations:(NSArray<NSString *> *)bundleIDs error:(NSError **)error;
+- (BOOL)approveLocationServicesForBundleIDs:(NSArray<NSString *> *)bundleIDs error:(NSError **)error;
 
 @end
 
 /**
  Modifies the Frontboard Watchdog Override.
  */
-@interface FBWatchdogOverrideModificationStrategy : FBPlistModificationStrategy
+@interface FBWatchdogOverrideModificationStrategy : FBDefaultsModificationStrategy
 
 /**
  Overrides the default SpringBoard watchdog timer for the applications. You can use this to give your application more
@@ -92,7 +82,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  Modifies the Keyboard Settings.
  */
-@interface FBKeyboardSettingsModificationStrategy : FBPlistModificationStrategy
+@interface FBKeyboardSettingsModificationStrategy : FBDefaultsModificationStrategy
 
 /**
  Prepares the Simulator Keyboard, prior to launch.

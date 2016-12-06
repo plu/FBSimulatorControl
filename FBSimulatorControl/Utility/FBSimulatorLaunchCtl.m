@@ -199,27 +199,10 @@
     environment:@{}
     options:0];
 
-  // Construct a pipe to stdout and read asynchronously from it.
-  // Synchronize on the mutable string.
-  NSPipe *stdOutPipe = [NSPipe pipe];
-  NSDictionary *options = [launchConfiguration simDeviceLaunchOptionsWithStdOut:stdOutPipe.fileHandleForWriting stdErr:nil];
-
-  NSError *innerError = nil;
-  pid_t processIdentifier = [[FBAgentLaunchStrategy withSimulator:self.simulator]
-    spawnShortRunningWithPath:launchConfiguration.agentBinary.path
-    options:options
-    timeout:FBControlCoreGlobalConfiguration.fastTimeout
-    error:&innerError];
-  if (processIdentifier <= 0) {
-    return [[[FBSimulatorError
-      describeFormat:@"Running launchctl %@ failed", [FBCollectionInformation oneLineDescriptionFromArray:arguments]]
-      causedBy:innerError]
-      fail:error];
-  }
-  [stdOutPipe.fileHandleForWriting closeFile];
-  NSData *data = [stdOutPipe.fileHandleForReading readDataToEndOfFile];
-  NSString *output = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-  return [output copy];
+  // Spawn and get the output
+  return [[FBAgentLaunchStrategy
+    withSimulator:self.simulator]
+    launchConsumingStdout:launchConfiguration error:error];
 }
 
 @end
