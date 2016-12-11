@@ -42,6 +42,8 @@
 
 @implementation FBSimulator
 
+@synthesize auxillaryDirectory = _auxillaryDirectory;
+
 #pragma mark Lifecycle
 
 + (instancetype)fromSimDevice:(SimDevice *)device configuration:(nullable FBSimulatorConfiguration *)configuration launchdSimProcess:(nullable FBProcessInfo *)launchdSimProcess containerApplicationProcess:(nullable FBProcessInfo *)containerApplicationProcess set:(FBSimulatorSet *)set
@@ -89,7 +91,7 @@
   _historyGenerator = historyGenerator;
   _eventRelay = relay;
   _mutableSink = mutableSink;
-  _diagnostics = diagnosticsSink;
+  _simulatorDiagnostics = diagnosticsSink;
   _resourceSink = resourceSink;
 
   return self;
@@ -125,6 +127,11 @@
 - (id<FBControlCoreConfiguration_OS>)osConfiguration
 {
   return self.configuration.os;
+}
+
+- (FBiOSTargetDiagnostics *)diagnostics
+{
+  return self.simulatorDiagnostics;
 }
 
 - (NSComparisonResult)compare:(id<FBiOSTarget>)target

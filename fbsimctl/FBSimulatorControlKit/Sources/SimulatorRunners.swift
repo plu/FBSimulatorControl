@@ -78,8 +78,6 @@ struct SimulatorActionRunner : Runner {
       return iOSTargetRunner(reporter, EventName.Delete, ControlCoreSubject(simulator)) {
         try simulator.set!.delete(simulator)
       }
-    case .diagnose(let query, let format):
-      return DiagnosticsRunner(reporter, query, query, format)
     case .erase:
       return iOSTargetRunner(reporter, EventName.Erase, ControlCoreSubject(simulator)) {
         try simulator.erase()
@@ -116,13 +114,14 @@ struct SimulatorActionRunner : Runner {
         interaction.open(url)
       }
     case .record(let start):
-      return SimulatorInteractionRunner(reporter, EventName.Record, start) { interaction in
-        if (start) {
-          interaction.startRecordingVideo()
-        } else {
-          interaction.stopRecordingVideo()
-        }
-      }
+      let command = FBSimulatorVideoRecordingCommands.withSimulator(simulator)
+      let interaction = start ? FBCommandInteractions.startRecording(withCommand: command) : FBCommandInteractions.stopRecording(withCommand: command)
+      return iOSTargetRunner(
+        reporter: reporter,
+        name: EventName.Record,
+        subject: start,
+        interaction: interaction
+      )
     case .relaunch(let appLaunch):
       return SimulatorInteractionRunner(reporter, EventName.Relaunch, ControlCoreSubject(appLaunch)) { interaction in
         interaction.launchOrRelaunchApplication(appLaunch)
@@ -181,51 +180,6 @@ private struct SimulatorInteractionRunner : Runner {
       try interact.perform()
     }
     return action.run()
-  }
-}
-
-private struct DiagnosticsRunner : Runner {
-  let reporter: SimulatorReporter
-  let subject: ControlCoreValue
-  let query: FBDiagnosticQuery
-  let format: DiagnosticFormat
-
-  init(_ reporter: SimulatorReporter, _ subject: ControlCoreValue, _ query: FBDiagnosticQuery, _ format: DiagnosticFormat) {
-    self.reporter = reporter
-    self.subject = subject
-    self.query = query
-    self.format = format
-  }
-
-  func run() -> CommandResult {
-    reporter.reportValue(EventName.Diagnose, EventType.Started, query)
-    let diagnostics = self.fetchDiagnostics()
-    reporter.reportValue(EventName.Diagnose, EventType.Ended, query)
-
-    let subjects: [EventReporterSubject] = diagnostics.map { diagnostic in
-      return SimpleSubject(
-        EventName.Diagnostic,
-        EventType.Discrete,
-        ControlCoreSubject(diagnostic)
-      )
-    }
-    return .success(CompositeSubject(subjects))
-  }
-
-  func fetchDiagnostics() -> [FBDiagnostic] {
-    let diagnostics = self.reporter.simulator.diagnostics
-    let format = self.format
-
-    return query.perform(diagnostics).map { diagnostic in
-      switch format {
-      case .CurrentFormat:
-        return diagnostic
-      case .Content:
-        return FBDiagnosticBuilder(diagnostic: diagnostic).readIntoMemory().build()
-      case .Path:
-        return FBDiagnosticBuilder(diagnostic: diagnostic).writeOutToFile().build()
-      }
-    }
   }
 }
 

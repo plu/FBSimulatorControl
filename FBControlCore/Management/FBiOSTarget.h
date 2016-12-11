@@ -14,6 +14,7 @@
 #import <FBControlCore/FBApplicationCommands.h>
 
 @class FBProcessInfo;
+@class FBiOSTargetDiagnostics;
 @protocol FBControlCoreConfiguration_Device;
 @protocol FBControlCoreConfiguration_OS;
 
@@ -56,6 +57,16 @@ NS_ASSUME_NONNULL_BEGIN
  The Name of the iOS Target. This is the name given by the user, such as "Ada's iPhone"
  */
 @property (nonatomic, copy, readonly) NSString *name;
+
+/**
+ The Directory that FBSimulatorControl uses to store auxillary files.
+ */
+@property (nonatomic, copy, readonly) NSString *auxillaryDirectory;
+
+/**
+ The Diagnostics instance for the Target.
+ */
+@property (nonatomic, strong, readonly) FBiOSTargetDiagnostics *diagnostics;
 
 /**
  The State of the iOS Target. Currently only applies to Simulators.
