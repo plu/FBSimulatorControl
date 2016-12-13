@@ -102,7 +102,7 @@
     reporter:self.reporter
     logger:self.logger];
 
-  FBTestManagerResult *result = [testManager connectWithTimeout:FBControlCoreGlobalConfiguration.slowTimeout];
+  FBTestManagerResult *result = [testManager connectWithTimeout:FBControlCoreGlobalConfiguration.regularTimeout];
   if (result) {
     return[[[XCTestBootstrapError
       describeFormat:@"Test Manager Connection Failed: %@", result.description]
