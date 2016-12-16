@@ -30,4 +30,4 @@ matrix:
 script: ./build.sh
 branches:
   only:
-    - master
+    - pxctest
