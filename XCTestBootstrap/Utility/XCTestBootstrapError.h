@@ -20,6 +20,7 @@ extern NSString *const XCTestBootstrapErrorDomain;
  Error Codes.
  */
 extern const NSInteger XCTestBootstrapErrorCodeStartupFailure;
+extern const NSInteger XCTestBootstrapErrorCodeStartupTimeout;
 extern const NSInteger XCTestBootstrapErrorCodeLostConnection;
 
 /**
