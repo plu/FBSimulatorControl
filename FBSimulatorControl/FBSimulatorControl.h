@@ -8,7 +8,7 @@
  */
 
 #import <FBSimulatorControl/FBAddVideoPolyfill.h>
-#import <FBSimulatorControl/FBAddVideoStrategy.h>
+#import <FBSimulatorControl/FBUploadMediaStrategy.h>
 #import <FBSimulatorControl/FBAgentLaunchStrategy.h>
 #import <FBSimulatorControl/FBApplicationLaunchStrategy.h>
 #import <FBSimulatorControl/FBCompositeSimulatorEventSink.h>
@@ -56,7 +56,6 @@
 #import <FBSimulatorControl/FBSimulatorInteraction+Lifecycle.h>
 #import <FBSimulatorControl/FBSimulatorInteraction+Private.h>
 #import <FBSimulatorControl/FBSimulatorInteraction+Settings.h>
-#import <FBSimulatorControl/FBSimulatorInteraction+Upload.h>
 #import <FBSimulatorControl/FBSimulatorInteraction+XCTest.h>
 #import <FBSimulatorControl/FBSimulatorInteraction.h>
 #import <FBSimulatorControl/FBSimulatorLaunchCtl.h>

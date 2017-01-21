@@ -104,11 +104,6 @@ struct SimulatorActionRunner : Runner {
             interaction.waitUntilAllTestRunnersHaveFinishedTesting(withTimeout: configuration.timeout)
         }
       }
-    case .listApps:
-      return iOSTargetRunner(reporter, nil, ControlCoreSubject(simulator)) {
-        let subject = ControlCoreSubject(simulator.installedApplications.map { $0.jsonSerializableRepresentation() } as NSArray)
-        reporter.reporter.reportSimple(EventName.ListApps, EventType.Discrete, subject)
-      }
     case .open(let url):
       return SimulatorInteractionRunner(reporter, EventName.Open, url.bridgedAbsoluteString) { interaction in
         interaction.open(url)
@@ -132,10 +127,6 @@ struct SimulatorActionRunner : Runner {
     case .setLocation(let latitude, let longitude):
       return SimulatorInteractionRunner(reporter, EventName.SetLocation, ControlCoreSubject(simulator)) { interaction in
         interaction.setLocation(latitude, longitude: longitude)
-      }
-    case .uninstall(let bundleID):
-      return SimulatorInteractionRunner(reporter, EventName.Uninstall, bundleID) { interaction in
-        interaction.uninstallApplication(withBundleID: bundleID)
       }
     case .upload(let diagnostics):
       return UploadRunner(reporter, diagnostics)
@@ -233,10 +224,10 @@ private struct UploadRunner : Runner {
 
     if media.count > 0 {
       let paths = media.map { $0.1 }
-      let interaction = SimulatorInteractionRunner(self.reporter, EventName.Upload, StringsSubject(paths)) { interaction in
-        interaction.uploadMedia(paths)
+      let runner = iOSTargetRunner(reporter, EventName.Upload, StringsSubject(paths)) {
+        try FBUploadMediaStrategy(simulator: self.reporter.simulator).uploadMedia(paths)
       }
-      let result = interaction.run()
+      let result = runner.run()
       switch result {
       case .failure: return result
       default: break

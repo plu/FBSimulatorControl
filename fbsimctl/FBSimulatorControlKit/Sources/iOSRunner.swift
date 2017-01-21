@@ -39,6 +39,10 @@ struct iOSActionProvider {
         subject: ControlCoreSubject(appPath as NSString),
         interaction: FBCommandInteractions.installApplication(withPath: appPath, command: target)
       )
+    case .uninstall(let appBundleID):
+      return iOSTargetRunner(reporter, EventName.Uninstall,ControlCoreSubject(appBundleID as NSString)) {
+        try target.uninstallApplication(withBundleID: appBundleID)
+      }
     case .launchApp(let appLaunch):
       return iOSTargetRunner(
         reporter: reporter,
@@ -46,6 +50,11 @@ struct iOSActionProvider {
         subject: ControlCoreSubject(appLaunch),
         interaction: FBCommandInteractions.launchApplication(appLaunch, command: target)
       )
+    case .listApps:
+      return iOSTargetRunner(reporter, nil, ControlCoreSubject(target as! ControlCoreValue)) {
+        let subject = ControlCoreSubject(target.installedApplications().map { $0.jsonSerializableRepresentation() }  as NSArray)
+        reporter.reporter.reportSimple(EventName.ListApps, EventType.Discrete, subject)
+      }
     case .record(let start):
       return iOSTargetRunner(
         reporter: reporter,
