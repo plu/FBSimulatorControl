@@ -89,7 +89,7 @@ static BOOL WriteOutputToFilePath(const char *filePath, asl_object_t aslFile, pi
 - (FBDiagnostic *)diagnosticForProcessInfo:(FBProcessInfo *)processInfo logBuilder:(FBDiagnosticBuilder *)logBuilder
 {
   return [[[[logBuilder
-    updateShortName:processInfo.processName]
+    updateShortName:[processInfo.processName stringByAppendingFormat:@"_%zd", processInfo.processIdentifier]]
     updateFileType:@"log"]
     updatePathFromBlock:^ BOOL (NSString *outputPath) {
       return WriteOutputToFilePath(outputPath.UTF8String, self.asl, processInfo.processIdentifier);
