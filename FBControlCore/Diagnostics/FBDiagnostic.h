@@ -158,6 +158,14 @@ NS_ASSUME_NONNULL_BEGIN
 - (instancetype)updateStorageDirectory:(NSString *)storageDirectory;
 
 /**
+ Appends given path component to the current `storageDirectory` of the underlying `FBDiagnostic`.
+
+ @param pathComponent the path component that should be appended to the current storageDirectory.
+ @return the reciever, for chaining.
+ */
+- (instancetype)updateStorageDirectoryByAppendingPathComponent:(NSString *)pathComponent;
+
+/**
  Updates the `destination` of the underlying `FBDiagnostic`.
 
  @param destination the Destination to update with.
