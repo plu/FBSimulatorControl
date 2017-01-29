@@ -27,6 +27,14 @@ NS_ASSUME_NONNULL_BEGIN
  */
 + (NSXMLDocument *)documentForTestSuite:(FBTestManagerTestReporterTestSuite *)testSuite;
 
+/**
+ Generates JUnit XML document for given array of test suites.
+
+ @param testSuites the test suites to transform.
+ @return an NSXMLDocument instance.
+ */
++ (NSXMLDocument *)documentForTestSuites:(NSArray<FBTestManagerTestReporterTestSuite *> *)testSuites;
+
 @end
 
 NS_ASSUME_NONNULL_END

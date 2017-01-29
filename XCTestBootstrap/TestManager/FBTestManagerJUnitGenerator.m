@@ -17,16 +17,25 @@
 
 #pragma mark - JUnit XML Generator
 
-+ (NSXMLDocument *)documentForTestSuite:(FBTestManagerTestReporterTestSuite *)testSuite
++ (NSXMLDocument *)documentForTestSuites:(NSArray<FBTestManagerTestReporterTestSuite *> *)testSuites
 {
   NSXMLElement *testSuiteElement = [NSXMLElement elementWithName:@"testsuites"];
-  [testSuiteElement addChild:[self elementForTestSuite:testSuite]];
+  for (FBTestManagerTestReporterTestSuite *testSuite in testSuites) {
+    [testSuiteElement addChild:[self elementForTestSuite:testSuite]];
+  }
   NSXMLDocument *document = [NSXMLDocument documentWithRootElement:testSuiteElement];
   document.version = @"1.0";
   document.standalone = YES;
   document.characterEncoding = @"UTF-8";
   return document;
 }
+
++ (NSXMLDocument *)documentForTestSuite:(FBTestManagerTestReporterTestSuite *)testSuite
+{
+  return [self documentForTestSuites:@[testSuite]];
+}
+
+#pragma mark - Private
 
 + (NSXMLElement *)elementForTestCase:(FBTestManagerTestReporterTestCase *)testCase
 {
