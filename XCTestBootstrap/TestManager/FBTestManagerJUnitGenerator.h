@@ -28,12 +28,22 @@ NS_ASSUME_NONNULL_BEGIN
 + (NSXMLDocument *)documentForTestSuite:(FBTestManagerTestReporterTestSuite *)testSuite;
 
 /**
- Generates JUnit XML document for given array of test suites.
+ Generates JUnit XML document for given array of test suite elements.
 
- @param testSuites the test suites to transform.
+ @param testSuiteElements the test suite XML element.
  @return an NSXMLDocument instance.
  */
-+ (NSXMLDocument *)documentForTestSuites:(NSArray<FBTestManagerTestReporterTestSuite *> *)testSuites;
++ (NSXMLDocument *)documentForTestSuiteElements:(NSArray<NSXMLElement *> *)testSuiteElements;
+
+/**
+ Generates an XML node for the given Test Suite object and prefixes all Test Case names
+ with the given package prefix.
+
+ @param testSuite the test suite to transform.
+ @param packagePrefix the package prefix to prepend on each test case class name.
+ @return an NSXMLDocument instance.
+ */
++ (NSXMLElement *)elementForTestSuite:(FBTestManagerTestReporterTestSuite *)testSuite packagePrefix:(nullable NSString *)packagePrefix;
 
 @end
 
