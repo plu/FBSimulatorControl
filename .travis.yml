@@ -1,6 +1,5 @@
 language: objective-c
 before_install:
-  - brew install python3
   - gem install xcpretty --no-ri --no-doc
 matrix:
   include:
@@ -10,15 +9,6 @@ matrix:
     - os: osx
       osx_image: xcode8.2
       env: TARGET=framework COMMAND=test FBSIMULATORCONTROL_DEVICE_SET=custom FBSIMULATORCONTROL_LAUNCH_TYPE=direct
-    - os: osx
-      osx_image: xcode8.2
-      env: TARGET=fbsimctl COMMAND=test
-    - os: osx
-      osx_image: xcode8.2
-      env: TARGET=fbsimctl COMMAND=e2e-test
-    - os: osx
-      osx_image: xcode8.2
-      env: TARGET=fbxctest COMMAND=test
 script: ./build.sh
 branches:
   only:

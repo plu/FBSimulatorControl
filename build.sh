@@ -271,10 +271,10 @@ case $TARGET in
   framework)
     case $COMMAND in
       build)
-        all_frameworks_build $OUTPUT_DIRECTORY;;
+        simulator_framework_build $OUTPUT_DIRECTORY;;
       test)
         build_test_deps
-        all_frameworks_test;;
+        simulator_framework_test;;
       *)
         echo "Unknown Command $2"
         exit 1;;

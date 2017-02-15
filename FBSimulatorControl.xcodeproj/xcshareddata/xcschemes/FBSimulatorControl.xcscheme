@@ -37,6 +37,59 @@
                BlueprintName = "FBSimulatorControlTests"
                ReferencedContainer = "container:FBSimulatorControl.xcodeproj">
             </BuildableReference>
+            <SkippedTests>
+               <Test
+                  Identifier = "FBControlCoreValueTestCase">
+               </Test>
+               <Test
+                  Identifier = "FBSimulatorApplicationDescriptorTests">
+               </Test>
+               <Test
+                  Identifier = "FBSimulatorAutomaticUpdatingTests">
+               </Test>
+               <Test
+                  Identifier = "FBSimulatorConfigurationTests">
+               </Test>
+               <Test
+                  Identifier = "FBSimulatorControlHistoryTests">
+               </Test>
+               <Test
+                  Identifier = "FBSimulatorControlTestCase">
+               </Test>
+               <Test
+                  Identifier = "FBSimulatorControlValueTypeTests">
+               </Test>
+               <Test
+                  Identifier = "FBSimulatorDiagnosticsTests">
+               </Test>
+               <Test
+                  Identifier = "FBSimulatorFramebufferTests">
+               </Test>
+               <Test
+                  Identifier = "FBSimulatorHistoryGeneratorTests">
+               </Test>
+               <Test
+                  Identifier = "FBSimulatorLaunchTests">
+               </Test>
+               <Test
+                  Identifier = "FBSimulatorMediaUploadTests">
+               </Test>
+               <Test
+                  Identifier = "FBSimulatorPoolTestCase">
+               </Test>
+               <Test
+                  Identifier = "FBSimulatorPoolTests">
+               </Test>
+               <Test
+                  Identifier = "FBSimulatorSetQueryingTests">
+               </Test>
+               <Test
+                  Identifier = "FBSimulatorSetTests">
+               </Test>
+               <Test
+                  Identifier = "FBSimulatorTestInjection">
+               </Test>
+            </SkippedTests>
          </TestableReference>
       </Testables>
       <MacroExpansion>
