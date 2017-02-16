@@ -4,11 +4,51 @@
 
 #import "FBRunLoopSpinner.h"
 #import "FBControlCoreError.h"
+#import "FBLineBuffer.h"
 
-static BOOL awaitHasConsumedEOF(id<FBFileDataConsumer> consumer, NSTimeInterval timeout, NSError **error)
+@interface FBAwaitableFileDataConsumer ()
+
+@property (nonatomic, strong, readonly) id<FBFileDataConsumer> consumer;
+@property (atomic, assign, readwrite) BOOL hasConsumedEOF;
+
+@end
+
+@implementation FBAwaitableFileDataConsumer
+
++ (instancetype)consumerWithConsumer:(id<FBFileDataConsumer>)consumer
+{
+  return [[self alloc] initWithConsumer:consumer];
+}
+
+- (instancetype)initWithConsumer:(id<FBFileDataConsumer>)consumer
+{
+  self = [super init];
+  if (!self) {
+    return nil;
+  }
+
+  _consumer = consumer;
+  _hasConsumedEOF = NO;
+
+  return self;
+}
+
+- (void)consumeData:(NSData *)data
+{
+  NSAssert(self.hasConsumedEOF == NO, @"Has already consumed End-of-File");
+  [self.consumer consumeData:data];
+}
+
+- (void)consumeEndOfFile
+{
+  NSAssert(self.hasConsumedEOF == NO, @"Has already consumed End-of-File");
+  self.hasConsumedEOF = YES;
+}
+
+- (BOOL)awaitEndOfFileWithTimeout:(NSTimeInterval)timeout error:(NSError **)error
 {
   BOOL success = [NSRunLoop.currentRunLoop spinRunLoopWithTimeout:timeout untilTrue:^BOOL{
-    return consumer.hasConsumedEOF;
+    return self.hasConsumedEOF;
   }];
   if (!success) {
     return [[FBControlCoreError
@@ -18,11 +58,13 @@ static BOOL awaitHasConsumedEOF(id<FBFileDataConsumer> consumer, NSTimeInterval 
   return YES;
 }
 
+@end
+
 @interface FBLineFileDataConsumer ()
 
-@property (nonatomic, strong, nullable, readwrite) NSMutableData *buffer;
 @property (nonatomic, strong, nullable, readwrite) dispatch_queue_t queue;
 @property (nonatomic, copy, nullable, readwrite) void (^consumer)(NSString *);
+@property (nonatomic, strong, readwrite) FBLineBuffer *buffer;
 
 @end
 
@@ -48,65 +90,41 @@ static BOOL awaitHasConsumedEOF(id<FBFileDataConsumer> consumer, NSTimeInterval 
 
   _queue = queue;
   _consumer = consumer;
-  _buffer = [NSMutableData data];
+  _buffer = [FBLineBuffer new];
 
   return self;
 }
 
 - (void)consumeData:(NSData *)data
 {
-  NSAssert(self.hasConsumedEOF == NO, @"Cannot consume data when EOF has been consumed");
   @synchronized (self) {
     [self.buffer appendData:data];
-    while (self.buffer.length != 0) {
-      NSRange newlineRange = [self.buffer
-        rangeOfData:[NSData dataWithBytes:"\n" length:1]
-        options:0
-        range:NSMakeRange(0, self.buffer.length)];
-      if (newlineRange.length == 0) {
-        break;
-      }
-      NSData *lineData = [self.buffer subdataWithRange:NSMakeRange(0, newlineRange.location)];
-      [self.buffer replaceBytesInRange:NSMakeRange(0, newlineRange.location + 1) withBytes:"" length:0];
-      NSString *line = [[NSString alloc] initWithData:lineData encoding:NSUTF8StringEncoding];
-      void (^consumer)(NSString *) = self.consumer;
-      dispatch_async(self.queue, ^{
-        consumer(line);
-      });
-    }
+    [self dispatchAvailableLines];
   }
 }
 
 - (void)consumeEndOfFile
 {
-  NSAssert(self.hasConsumedEOF == NO, @"Cannot consume EOF when EOF has been consumed");
   @synchronized (self) {
+    [self dispatchAvailableLines];
+    dispatch_async(self.queue, ^{
+      self.consumer = nil;
+      self.queue = nil;
+      self.buffer = nil;
+    });
+  }
+}
+
+- (void)dispatchAvailableLines
+{
+  NSString *line = [self.buffer consumeLineString];
+  while (line != nil) {
     void (^consumer)(NSString *) = self.consumer;
-    dispatch_queue_t queue = self.queue;
-    NSData *buffer = self.buffer;
-
-    if (buffer.length != 0) {
-      NSString *line = [[NSString alloc] initWithData:buffer encoding:NSUTF8StringEncoding];
-      dispatch_async(queue, ^{
-        consumer(line);
-        self.consumer = nil;
-        self.queue = nil;
-        self.buffer = nil;
-      });
-    }
+    dispatch_async(self.queue, ^{
+      consumer(line);
+    });
+    line = [self.buffer consumeLineString];
   }
-}
-
-- (BOOL)hasConsumedEOF
-{
-  @synchronized (self) {
-    return self.consumer == nil;
-  }
-}
-
-- (BOOL)awaitEndOfFileWithTimeout:(NSTimeInterval)timeout error:(NSError **)error
-{
-  return awaitHasConsumedEOF(self, timeout, error);
 }
 
 @end
@@ -138,7 +156,7 @@ static BOOL awaitHasConsumedEOF(id<FBFileDataConsumer> consumer, NSTimeInterval 
 
 - (void)consumeData:(NSData *)data
 {
-  NSAssert(self.hasConsumedEOF == NO, @"Cannot consume data when EOF has been consumed");
+  NSAssert(self.finalData == nil, @"Cannot consume data when EOF has been consumed");
   @synchronized (self) {
     [self.mutableData appendData:data];
   }
@@ -146,7 +164,7 @@ static BOOL awaitHasConsumedEOF(id<FBFileDataConsumer> consumer, NSTimeInterval 
 
 - (void)consumeEndOfFile
 {
-  NSAssert(self.hasConsumedEOF == NO, @"Cannot consume EOF when EOF has been consumed");
+  NSAssert(self.finalData == nil, @"Cannot consume EOF when EOF has been consumed");
   @synchronized (self) {
     _finalData = [self.mutableData copy];
     _mutableData = nil;
@@ -158,18 +176,6 @@ static BOOL awaitHasConsumedEOF(id<FBFileDataConsumer> consumer, NSTimeInterval 
   @synchronized (self) {
     return self.finalData ?: [self.mutableData copy];
   }
-}
-
-- (BOOL)hasConsumedEOF
-{
-  @synchronized (self) {
-    return self.finalData != nil;
-  }
-}
-
-- (BOOL)awaitEndOfFileWithTimeout:(NSTimeInterval)timeout error:(NSError **)error
-{
-  return awaitHasConsumedEOF(self, timeout, error);
 }
 
 @end
@@ -210,21 +216,6 @@ static BOOL awaitHasConsumedEOF(id<FBFileDataConsumer> consumer, NSTimeInterval 
   for (id<FBFileDataConsumer> consumer in self.consumers) {
     [consumer consumeEndOfFile];
   }
-}
-
-- (BOOL)hasConsumedEOF
-{
-  for (id<FBFileDataConsumer> consumer in self.consumers) {
-    if (!consumer.hasConsumedEOF) {
-      return NO;
-    }
-  }
-  return YES;
-}
-
-- (BOOL)awaitEndOfFileWithTimeout:(NSTimeInterval)timeout error:(NSError **)error
-{
-  return awaitHasConsumedEOF(self, timeout, error);
 }
 
 @end

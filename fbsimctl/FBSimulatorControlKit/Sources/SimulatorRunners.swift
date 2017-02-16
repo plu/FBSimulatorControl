@@ -82,6 +82,10 @@ struct SimulatorActionRunner : Runner {
       return iOSTargetRunner(reporter, EventName.Erase, ControlCoreSubject(simulator)) {
         try simulator.erase()
       }
+    case .hid(let event):
+      return iOSTargetRunner(reporter, EventName.Hid, ControlCoreSubject(simulator)) {
+        try event.perform(on: simulator.connect().connectToHID())
+      }
     case .keyboardOverride:
       return SimulatorInteractionRunner(reporter, EventName.KeyboardOverride, ControlCoreSubject(simulator)) { interaction in
         interaction.setupKeyboard()
@@ -121,8 +125,9 @@ struct SimulatorActionRunner : Runner {
         try simulator.set!.kill(simulator)
       }
     case .tap(let x, let y):
-      return SimulatorInteractionRunner(reporter, EventName.Tap, ControlCoreSubject(simulator)) { interaction in
-        interaction.tap(x, y: y)
+      return iOSTargetRunner(reporter, EventName.Tap, ControlCoreSubject(simulator)) {
+        let event = FBSimulatorHIDEvent.tapAt(x: x, y: y)
+        try event.perform(on: simulator.connect().connectToHID())
       }
     case .setLocation(let latitude, let longitude):
       return SimulatorInteractionRunner(reporter, EventName.SetLocation, ControlCoreSubject(simulator)) { interaction in
