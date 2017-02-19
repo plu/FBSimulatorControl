@@ -146,8 +146,9 @@ NSString *const FBSimulatorLogNameScreenshot = @"screenshot";
 - (FBDiagnostic *)stdOut:(FBProcessLaunchConfiguration *)configuration
 {
   NSString *name = [NSString stringWithFormat:@"%@_out", configuration.identifiableName];
-  return [[[[[self.baseLogBuilder
+  return [[[[[[self.baseLogBuilder
     updateStorageDirectory:[self stdOutErrContainersPath]]
+    updateStorageDirectoryByAppendingPathComponent:NSUUID.UUID.UUIDString]
     updateShortName:name]
     updateFileType:@"txt"]
     updatePathFromDefaultLocation]
@@ -157,8 +158,9 @@ NSString *const FBSimulatorLogNameScreenshot = @"screenshot";
 - (FBDiagnostic *)stdErr:(FBProcessLaunchConfiguration *)configuration
 {
   NSString *name = [NSString stringWithFormat:@"%@_err", configuration.identifiableName];
-  return [[[[[self.baseLogBuilder
+  return [[[[[[self.baseLogBuilder
     updateStorageDirectory:[self stdOutErrContainersPath]]
+    updateStorageDirectoryByAppendingPathComponent:NSUUID.UUID.UUIDString]
     updateShortName:name]
     updateFileType:@"txt"]
     updatePathFromDefaultLocation]
@@ -167,7 +169,11 @@ NSString *const FBSimulatorLogNameScreenshot = @"screenshot";
 
 - (NSArray<FBDiagnostic *> *)stdOutErrDiagnostics
 {
-  return [FBSimulatorDiagnostics diagnosticsForSubpathsOf:self.stdOutErrContainersPath];
+  NSMutableArray *stdOutErrDiagnostics = [NSMutableArray array];
+  for (NSString *path in [FBFileFinder contentsOfDirectoryWithBasePath:self.stdOutErrContainersPath]) {
+    [stdOutErrDiagnostics addObjectsFromArray:[FBSimulatorDiagnostics diagnosticsForSubpathsOf:path]];
+  }
+  return [stdOutErrDiagnostics copy];
 }
 
 - (NSDictionary<FBProcessInfo *, FBDiagnostic *> *)launchedProcessLogs

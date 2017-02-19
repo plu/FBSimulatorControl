@@ -71,10 +71,6 @@
 
 - (void)testLaunchedApplicationLogs
 {
-  if (FBSimulatorControlTestCase.isRunningOnTravis) {
-    return;
-  }
-
   FBSimulator *simulator = [self assertObtainsBootedSimulator];
   FBApplicationLaunchConfiguration *appLaunch = self.tableSearchAppLaunch.injectingShimulator;
   [self assertInteractionSuccessful:[[simulator.interact installApplication:self.tableSearchApplication] launchApplication:appLaunch]];
@@ -84,15 +80,31 @@
   }];
 }
 
+- (void)testLaunchedApplicationLogsWithDefaultOutputToFile
+{
+  FBSimulator *simulator = [self assertObtainsBootedSimulator];
+  FBProcessOutputConfiguration *output = [FBProcessOutputConfiguration defaultOutputToFile];
+  FBApplicationLaunchConfiguration *appLaunch = [self.tableSearchAppLaunch.injectingShimulator withOutput:output];
+  [self assertInteractionSuccessful:[[simulator.interact installApplication:self.tableSearchApplication] launchApplication:appLaunch]];
+
+  [self assertFindsNeedle:@"Shimulator" fromHaystackBlock:^ NSString * {
+    return [[simulator.simulatorDiagnostics.launchedProcessLogs.allValues firstObject] asString];
+  }];
+
+  [self assertFindsNeedle:@"Shimulator" fromHaystackBlock:^ NSString * {
+    NSString *haystack = @"";
+    for (FBDiagnostic *diagnostic in simulator.simulatorDiagnostics.stdOutErrDiagnostics) {
+        haystack = [haystack stringByAppendingString:[diagnostic asString]];
+    }
+    return haystack.length ? haystack : nil;
+  }];
+}
+
 - (void)testLaunchedApplicationLogsWithCustomLogFilePath
 {
-  if (FBSimulatorControlTestCase.isRunningOnTravis) {
-    return;
-  }
-
   NSString *path = [NSTemporaryDirectory() stringByAppendingPathComponent:NSUUID.UUID.UUIDString];
-  NSString *stdErrPath = [path stringByAppendingPathComponent:@"stderr.log"];
-  NSString *stdOutPath = [path stringByAppendingPathComponent:@"stdout.log"];
+  NSString *stdErrPath = [[path stringByAppendingPathComponent:@"Some Thing With Space"] stringByAppendingPathComponent:@"stderr.log"];
+  NSString *stdOutPath = [[path stringByAppendingPathComponent:@"Some Thing With Space"] stringByAppendingPathComponent:@"stdout.log"];
 
   FBProcessOutputConfiguration *output = [FBProcessOutputConfiguration configurationWithStdOut:stdOutPath stdErr:stdErrPath error:nil];
   FBSimulator *simulator = [self assertObtainsBootedSimulator];
@@ -106,11 +118,8 @@
   [self assertFindsNeedle:@"Shimulator" fromHaystackBlock:^ NSString * {
     NSString *stdErrContent = [NSString stringWithContentsOfFile:stdErrPath encoding:NSUTF8StringEncoding error:nil] ?: @"";
     NSString *stdOutContent = [NSString stringWithContentsOfFile:stdOutPath encoding:NSUTF8StringEncoding error:nil] ?: @"";
-    NSString *combinedContent = [stdErrContent stringByAppendingString:stdOutContent];
-    if (!combinedContent.length) {
-      return nil;
-    }
-    return combinedContent;
+    NSString *haystack = [stdErrContent stringByAppendingString:stdOutContent];
+    return haystack.length ? haystack : nil;
   }];
 }
 
@@ -136,6 +145,41 @@
   NSFileManager *fileManager = [NSFileManager defaultManager];
   XCTAssertTrue([fileManager fileExistsAtPath:stdErrDiagnostic.asPath]);
   XCTAssertTrue([fileManager fileExistsAtPath:stdOutDiagnostic.asPath]);
+}
+
+- (void)testCreateStdErrDiagnosticForSimulatorMultipleTimesCreatesUniqueLogFiles
+{
+  FBSimulator *simulator = [self assertObtainsSimulator];
+  FBProcessOutputConfiguration *output = [FBProcessOutputConfiguration defaultOutputToFile];
+  FBApplicationLaunchConfiguration *appLaunch = [self.tableSearchAppLaunch withOutput:output];
+
+  NSMutableSet *stdErrDiagnostics = [NSMutableSet set];
+  NSMutableSet *stdOutDiagnostics = [NSMutableSet set];
+
+  for (int i = 0; i < 3; i++) {
+    FBDiagnostic *diagnostic = nil;
+    [appLaunch createStdErrDiagnosticForSimulator:simulator diagnosticOut:&diagnostic error:nil];
+    [[NSString stringWithFormat:@"stderr%zd", i] writeToFile:diagnostic.asPath atomically:YES encoding:NSUTF8StringEncoding error:nil];
+    [stdErrDiagnostics addObject:diagnostic];
+    [appLaunch createStdOutDiagnosticForSimulator:simulator diagnosticOut:&diagnostic error:nil];
+    [[NSString stringWithFormat:@"stdout%zd", i] writeToFile:diagnostic.asPath atomically:YES encoding:NSUTF8StringEncoding error:nil];
+    [stdOutDiagnostics addObject:diagnostic];
+  }
+
+  XCTAssertEqual(stdErrDiagnostics.count, 3u);
+  XCTAssertEqual(stdOutDiagnostics.count, 3u);
+  XCTAssertEqual(simulator.simulatorDiagnostics.stdOutErrDiagnostics.count, 6u);
+
+  NSMutableArray *logContent = [NSMutableArray array];
+  for (FBDiagnostic *diagnostic in simulator.simulatorDiagnostics.stdOutErrDiagnostics) {
+    BOOL isDirectory;
+    XCTAssertTrue([[NSFileManager defaultManager] fileExistsAtPath:diagnostic.asPath isDirectory:&isDirectory]);
+    XCTAssertFalse(isDirectory);
+    [logContent addObject:diagnostic.asString];
+  }
+
+  NSArray *sortedLogContent = [logContent sortedArrayUsingSelector:@selector(compare:)];
+  XCTAssertEqualObjects(sortedLogContent, (@[@"stderr0", @"stderr1", @"stderr2", @"stdout0", @"stdout1", @"stdout2"]));
 }
 
 @end
