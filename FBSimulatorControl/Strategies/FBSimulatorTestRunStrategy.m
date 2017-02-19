@@ -85,8 +85,7 @@
   [environment addEntriesFromDictionary:self.configuration.testEnvironment];
 
   FBTestManager *testManager = [testRunStrategy
-    startTestManagerWithAttributes:self.configuration.applicationLaunchConfiguration.arguments
-    environment:environment
+    startTestManagerWithApplicationLaunchConfiguration:[self.configuration.applicationLaunchConfiguration withEnvironment:environment.copy]
     error:&innerError];
 
   if (!testManager) {
