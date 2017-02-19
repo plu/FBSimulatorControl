@@ -71,10 +71,6 @@
 
 - (void)testLaunchedApplicationLogs
 {
-  if (FBSimulatorControlTestCase.isRunningOnTravis) {
-    return;
-  }
-
   FBSimulator *simulator = [self assertObtainsBootedSimulator];
   FBApplicationLaunchConfiguration *appLaunch = self.tableSearchAppLaunch.injectingShimulator;
   [self assertInteractionSuccessful:[[simulator.interact installApplication:self.tableSearchApplication] launchApplication:appLaunch]];
@@ -86,10 +82,6 @@
 
 - (void)testLaunchedApplicationLogsWithDefaultOutputToFile
 {
-  if (FBSimulatorControlTestCase.isRunningOnTravis) {
-    return;
-  }
-
   FBSimulator *simulator = [self assertObtainsBootedSimulator];
   FBProcessOutputConfiguration *output = [FBProcessOutputConfiguration defaultOutputToFile];
   FBApplicationLaunchConfiguration *appLaunch = [self.tableSearchAppLaunch.injectingShimulator withOutput:output];
@@ -110,10 +102,6 @@
 
 - (void)testLaunchedApplicationLogsWithCustomLogFilePath
 {
-  if (FBSimulatorControlTestCase.isRunningOnTravis) {
-    return;
-  }
-
   NSString *path = [NSTemporaryDirectory() stringByAppendingPathComponent:NSUUID.UUID.UUIDString];
   NSString *stdErrPath = [[path stringByAppendingPathComponent:@"Some Thing With Space"] stringByAppendingPathComponent:@"stderr.log"];
   NSString *stdOutPath = [[path stringByAppendingPathComponent:@"Some Thing With Space"] stringByAppendingPathComponent:@"stdout.log"];
