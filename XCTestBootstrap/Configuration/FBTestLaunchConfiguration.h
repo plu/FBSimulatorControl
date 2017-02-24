@@ -54,20 +54,20 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @property (nonatomic, copy, readonly, nullable) NSDictionary<NSString *, NSString *> *testEnvironment;
 
+/**
+ Determines whether should initialize for UITesting
+ */
+@property (nonatomic, assign, readonly) BOOL shouldInitializeUITesting;
+
 /*
  Run only these tests. Format: "className/methodName"
  */
-@property (nonatomic, copy, readonly) NSSet<NSString *> *testsToRun;
+@property (nonatomic, copy, readonly, nullable) NSSet<NSString *> *testsToRun;
 
 /*
  Skip these tests. Format: "className/methodName"
  */
 @property (nonatomic, copy, readonly) NSSet<NSString *> *testsToSkip;
-
-/**
- Determines whether should initialize for UITesting
- */
-@property (nonatomic, assign, readonly) BOOL shouldInitializeUITesting;
 
 /*
  Bundle ID of to the target application for UI tests
@@ -112,6 +112,22 @@ NS_ASSUME_NONNULL_BEGIN
 - (instancetype)withUITesting:(BOOL)shouldInitializeUITesting;
 
 /**
+ Adds tests to skip.
+
+ @param testsToSkip tests to skip. Format: "className/methodName"
+ @return new test launch configuration with changes applied.
+ */
+- (instancetype)withTestsToSkip:(NSSet<NSString *> *)testsToSkip;
+
+/**
+ Adds tests to run.
+
+ @param testsToRun tests to run. Format: "className/methodName"
+ @return new test launch configuration with changes applied.
+ */
+- (instancetype)withTestsToRun:(NSSet<NSString *> *)testsToRun;
+
+/**
  Adds path to the target application for UI tests.
 
  @param targetApplicationPath path to the target application
@@ -135,22 +151,6 @@ NS_ASSUME_NONNULL_BEGIN
  @return new test launch configuration with changes applied.
  */
 - (instancetype)withTestEnvironment:(NSDictionary<NSString *, NSString *> *)testEnvironment;
-
-/**
- Adds tests to skip.
-
- @param testsToSkip tests to skip
- @return new test launch configuration with changes applied.
- */
-- (instancetype)withTestsToSkip:(NSSet<NSString *> *)testsToSkip;
-
-/**
- Adds tests to run.
-
- @param testsToRun tests to run
- @return new test launch configuration with changes applied.
- */
-- (instancetype)withTestsToRun:(NSSet<NSString *> *)testsToRun;
 
 @end
 

@@ -183,7 +183,6 @@ class WebserverSimulatorTestCase(FBSimctlTestCase):
         self.port = port
 
     def extractSimulatorSubjects(self, response):
-        print(response['subject'])
         self.assertEqual(response['status'], 'success')
         return [
             Simulator(event['subject']).get_udid()
@@ -267,6 +266,16 @@ class WebserverSimulatorTestCase(FBSimctlTestCase):
                 'data': data,
             })
         self.assertEventSuccesful([simulator.get_udid(), 'shutdown'], 'shutdown')
+
+    def testScreenshot(self):
+        if self.metal.is_supported() is False:
+            log.info('Metal not supported, skipping testScreenshot')
+            return
+        simulator = self.assertCreatesSimulator(['iPhone 6'])
+        self.assertEventSuccesful([simulator.get_udid(), 'boot'], 'boot')
+        with self.launchWebserver() as webserver:
+            webserver.get_binary(simulator.get_udid() + '/screenshot.png')
+            webserver.get_binary(simulator.get_udid() + '/screenshot.jpeg')
 
 
 class SingleSimulatorTestCase(FBSimctlTestCase):

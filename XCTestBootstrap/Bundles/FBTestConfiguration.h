@@ -89,6 +89,12 @@
 - (instancetype)withTestEnvironment:(NSDictionary<NSString *, NSString *> *)testEnvironment;
 
 /**
+ @param shouldInitializeForUITesting determines whether should initialize for UITesting
+ @return builder
+ */
+- (instancetype)withUITesting:(BOOL)shouldInitializeForUITesting;
+
+/**
  Adds tests to run.
 
  @param testsToRun tests to run
@@ -103,12 +109,6 @@
  @return builder
  */
 - (instancetype)withTestsToSkip:(NSSet<NSString *> *)testsToSkip;
-
-/**
- @param shouldInitializeForUITesting determines whether should initialize for UITesting
- @return builder
- */
-- (instancetype)withUITesting:(BOOL)shouldInitializeForUITesting;
 
 /**
  Adds bundle ID of to the target application for UI tests.

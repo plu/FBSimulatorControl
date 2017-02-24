@@ -24,9 +24,9 @@
 @interface FBTestBundleBuilder ()
 @property (nonatomic, strong) NSUUID *sessionIdentifier;
 @property (nonatomic, copy) NSDictionary<NSString *, NSString *> *testEnvironment;
+@property (nonatomic, assign) BOOL shouldInitializeForUITesting;
 @property (nonatomic, copy) NSSet<NSString *> *testsToRun;
 @property (nonatomic, copy) NSSet<NSString *> *testsToSkip;
-@property (nonatomic, assign) BOOL shouldInitializeForUITesting;
 @property (nonatomic, copy) NSString *targetApplicationBundleID;
 @property (nonatomic, copy) NSString *targetApplicationPath;
 @end
@@ -45,6 +45,12 @@
   return self;
 }
 
+- (instancetype)withUITesting:(BOOL)shouldInitializeForUITesting
+{
+  self.shouldInitializeForUITesting = shouldInitializeForUITesting;
+  return self;
+}
+
 - (instancetype)withTestsToRun:(NSSet<NSString *> *)testsToRun
 {
   self.testsToRun = testsToRun;
@@ -54,12 +60,6 @@
 - (instancetype)withTestsToSkip:(NSSet<NSString *> *)testsToSkip
 {
   self.testsToSkip = testsToSkip;
-  return self;
-}
-
-- (instancetype)withUITesting:(BOOL)shouldInitializeForUITesting
-{
-  self.shouldInitializeForUITesting = shouldInitializeForUITesting;
   return self;
 }
 

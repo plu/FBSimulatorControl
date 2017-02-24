@@ -57,7 +57,6 @@
   [self.configuration.reporter didBeginExecutingTestPlan];
 
   NSString *xctestPath = self.configuration.destination.xctestPath;
-  NSString *simctlPath = [FBControlCoreGlobalConfiguration.developerDirectory stringByAppendingPathComponent:@"usr/bin/simctl"];
   NSString *otestShimPath = simulator ? self.configuration.shims.iOSSimulatorOtestShimPath : self.configuration.shims.macOtestShimPath;
 
   // The fifo is used by the shim to report events from within the xctest framework.
@@ -76,21 +75,22 @@
 
   // Get the Launch Path and Arguments for the xctest process.
   NSString *testSpecifier = self.configuration.testFilter ?: @"All";
-  NSString *launchPath = simulator ? simctlPath : xctestPath;
-  NSArray<NSString *> *arguments = simulator
-    ? @[@"--set", simulator.deviceSetPath, @"spawn", simulator.udid, xctestPath, @"-XCTest", testSpecifier, self.configuration.testBundlePath]
-    : @[@"-XCTest", testSpecifier, self.configuration.testBundlePath];
+  NSString *launchPath = xctestPath;
+  NSArray<NSString *> *arguments = @[@"-XCTest", testSpecifier, self.configuration.testBundlePath];
 
   // Consumes the test output. Separate Readers are used as consuming an EOF will invalidate the reader.
+  NSUUID *uuid = [NSUUID UUID];
   dispatch_queue_t queue = dispatch_get_main_queue();
-  id<FBFileDataConsumer> stdOutReader = [FBLineFileDataConsumer lineReaderWithQueue:queue consumer:^(NSString *line){
+  id<FBFileConsumer> stdOutReader = [FBLineFileConsumer lineReaderWithQueue:queue consumer:^(NSString *line){
     [self.configuration.reporter testHadOutput:[line stringByAppendingString:@"\n"]];
   }];
-  id<FBFileDataConsumer> stdErrReader = [FBLineFileDataConsumer lineReaderWithQueue:queue consumer:^(NSString *line){
+  stdOutReader = [self.configuration.logger logConsumptionToFile:stdOutReader outputKind:@"out" udid:uuid];
+  id<FBFileConsumer> stdErrReader = [FBLineFileConsumer lineReaderWithQueue:queue consumer:^(NSString *line){
     [self.configuration.reporter testHadOutput:[line stringByAppendingString:@"\n"]];
   }];
+  stdErrReader = [self.configuration.logger logConsumptionToFile:stdErrReader outputKind:@"err" udid:uuid];
   // Consumes the shim output.
-  id<FBFileDataConsumer> otestShimLineReader = [FBLineFileDataConsumer lineReaderWithQueue:queue consumer:^(NSString *line){
+  id<FBFileConsumer> otestShimLineReader = [FBLineFileConsumer lineReaderWithQueue:queue consumer:^(NSString *line){
     if ([line length] == 0) {
       return;
     }
@@ -100,18 +100,36 @@
     }
     [self.configuration.reporter handleExternalEvent:event];
   }];
+  otestShimLineReader = [self.configuration.logger logConsumptionToFile:otestShimLineReader outputKind:@"shim" udid:uuid];
 
-  FBLogicTestProcess *process = [FBLogicTestProcess
-    processWithLaunchPath:launchPath
-    arguments:arguments
-    environment:[self.configuration buildEnvironmentWithEntries:environment]
-    stdOutReader:stdOutReader
-    stdErrReader:stdErrReader
-    xctestProcessIsSubprocess:(self.simulator != nil)];
+  FBLogicTestProcess *process = simulator
+    ? [FBLogicTestProcess
+        simulatorSpawnProcess:simulator
+        launchPath:launchPath
+        arguments:arguments
+        environment:[self.configuration buildEnvironmentWithEntries:environment]
+        waitForDebugger:self.configuration.waitForDebugger
+        stdOutReader:stdOutReader
+        stdErrReader:stdErrReader]
+    : [FBLogicTestProcess
+        taskProcessWithLaunchPath:launchPath
+        arguments:arguments
+        environment:[self.configuration buildEnvironmentWithEntries:environment]
+        waitForDebugger:self.configuration.waitForDebugger
+        stdOutReader:stdOutReader
+        stdErrReader:stdErrReader];
 
   // Start the process
-  if (![process startWithError:error]) {
+  pid_t pid = [process startWithError:error];
+  if (!pid) {
     return NO;
+  }
+
+  if (self.configuration.waitForDebugger) {
+    [self.configuration.reporter processWaitingForDebuggerWithProcessIdentifier:pid];
+    // If wait_for_debugger is passed, the child process receives SIGSTOP after immediately launch.
+    // We wait until it receives SIGCONT from an attached debugger.
+    waitid(P_PID, (id_t)pid, NULL, WCONTINUED);
   }
 
   // Create a reader of the otest-shim path and start reading it.

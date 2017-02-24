@@ -92,6 +92,7 @@
     launchAgentWithLaunchPath:agentLaunch.agentBinary.path
     arguments:agentLaunch.arguments
     environment:agentLaunch.environment
+    waitForDebugger:NO
     stdOut:stdOutHandle
     stdErr:stdErrHandle
     terminationHandler:terminationHandler
@@ -104,12 +105,13 @@
   return process;
 }
 
-- (nullable FBProcessInfo *)launchAgentWithLaunchPath:(NSString *)launchPath arguments:(NSArray<NSString *> *)arguments environment:(NSDictionary<NSString *, NSString *> *)environment stdOut:(nullable NSFileHandle *)stdOut stdErr:(nullable NSFileHandle *)stdErr terminationHandler:(nullable FBAgentLaunchHandler)terminationHandler error:(NSError **)error
+- (nullable FBProcessInfo *)launchAgentWithLaunchPath:(NSString *)launchPath arguments:(NSArray<NSString *> *)arguments environment:(NSDictionary<NSString *, NSString *> *)environment waitForDebugger:(BOOL)waitForDebugger stdOut:(nullable NSFileHandle *)stdOut stdErr:(nullable NSFileHandle *)stdErr terminationHandler:(nullable FBAgentLaunchHandler)terminationHandler error:(NSError **)error
 {
   NSDictionary<NSString *, id> *options = [FBAgentLaunchConfiguration
     simDeviceLaunchOptionsWithLaunchPath:launchPath
     arguments:arguments
     environment:environment
+    waitForDebugger:waitForDebugger
     stdOut:stdOut
     stdErr:stdErr];
 
@@ -130,7 +132,7 @@
   return process;
 }
 
-- (BOOL)launchAndWait:(FBAgentLaunchConfiguration *)agentLaunch consumer:(id<FBFileDataConsumer>)consumer error:(NSError **)error
+- (BOOL)launchAndWait:(FBAgentLaunchConfiguration *)agentLaunch consumer:(id<FBFileConsumer>)consumer error:(NSError **)error
 {
   FBPipeReader *pipe = [FBPipeReader pipeReaderWithConsumer:consumer];
   NSDictionary *options = [agentLaunch simDeviceLaunchOptionsWithStdOut:pipe.pipe.fileHandleForWriting stdErr:nil];
@@ -171,7 +173,7 @@
 
 - (nullable NSString *)launchConsumingStdout:(FBAgentLaunchConfiguration *)agentLaunch error:(NSError **)error
 {
-  FBAccumilatingFileDataConsumer *consumer = [FBAccumilatingFileDataConsumer new];
+  FBAccumilatingFileConsumer *consumer = [FBAccumilatingFileConsumer new];
   if (![self launchAndWait:agentLaunch consumer:consumer error:error]) {
     return nil;
   }

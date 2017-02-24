@@ -36,12 +36,12 @@
 
 @implementation FBXCTestConfiguration
 
-+ (nullable instancetype)configurationFromArguments:(NSArray<NSString *> *)arguments processUnderTestEnvironment:(NSDictionary<NSString *, NSString *> *)environment workingDirectory:(NSString *)workingDirectory reporter:(nullable id<FBXCTestReporter>)reporter logger:(nullable FBXCTestLogger *)logger error:(NSError **)error
++ (nullable instancetype)configurationFromArguments:(NSArray<NSString *> *)arguments processUnderTestEnvironment:(NSDictionary<NSString *, NSString *> *)environment workingDirectory:(NSString *)workingDirectory reporter:(nullable id<FBXCTestReporter>)reporter logger:(FBXCTestLogger *)logger error:(NSError **)error
 {
   return [self configurationFromArguments:arguments processUnderTestEnvironment:environment workingDirectory:workingDirectory reporter:reporter logger:logger timeout:0 error:nil];
 }
 
-+ (nullable instancetype)configurationFromArguments:(NSArray<NSString *> *)arguments processUnderTestEnvironment:(NSDictionary<NSString *, NSString *> *)environment workingDirectory:(NSString *)workingDirectory reporter:(nullable id<FBXCTestReporter>)reporter logger:(nullable FBXCTestLogger *)logger timeout:(NSTimeInterval)timeout error:(NSError **)error
++ (nullable instancetype)configurationFromArguments:(NSArray<NSString *> *)arguments processUnderTestEnvironment:(NSDictionary<NSString *, NSString *> *)environment workingDirectory:(NSString *)workingDirectory reporter:(nullable id<FBXCTestReporter>)reporter logger:(FBXCTestLogger *)logger timeout:(NSTimeInterval)timeout error:(NSError **)error
 {
   Class configurationClass = [self testConfigurationClassForArguments:arguments error:error];
   if (!configurationClass) {
@@ -106,7 +106,7 @@
     } else if ([argument isEqualToString:@"-listTestsOnly"]) {
       // Ignore. This is handled by the configuration class.
       continue;
-    } else if ([argument isEqualToString:@"--wait-for-debugger"]) {
+    } else if ([argument isEqualToString:@"-waitForDebugger"]) {
       self.waitForDebugger = YES;
       continue;
     }
@@ -311,9 +311,6 @@
   NSMutableDictionary<NSString *, NSString *> *environment = parentEnvironment.mutableCopy;
   for (NSString *key in environmentOverrides) {
     NSString *childKey = key;
-    if ([self.destination isKindOfClass:FBXCTestDestinationiPhoneSimulator.class]) {
-      childKey = [@"SIMCTL_CHILD_" stringByAppendingString:childKey];
-    }
     environment[childKey] = environmentOverrides[key];
   }
   return environment.copy;

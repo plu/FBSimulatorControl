@@ -25,6 +25,20 @@
   return [[self alloc] initWithFileHandle:fileHandle];
 }
 
++ (nullable instancetype)writerForFilePath:(NSString *)filePath error:(NSError **)error
+{
+  if (![NSFileManager.defaultManager fileExistsAtPath:filePath]) {
+    [[NSData data] writeToFile:filePath atomically:YES];
+  }
+  NSFileHandle *fileHandle = [NSFileHandle fileHandleForWritingAtPath:filePath];
+  if (!fileHandle) {
+    return [[FBControlCoreError
+      describeFormat:@"A file handle for path %@ could not be opened", filePath]
+      fail:error];
+  }
+  return [FBFileWriter writerWithFileHandle:fileHandle];
+}
+
 - (instancetype)initWithFileHandle:(NSFileHandle *)fileHandle
 {
   self = [super init];
@@ -38,7 +52,7 @@
   return self;
 }
 
-#pragma mark FBFileDataConsumer Implementation
+#pragma mark FBFileConsumer Implementation
 
 - (void)consumeData:(NSData *)data
 {

@@ -79,6 +79,12 @@
   return self;
 }
 
+- (instancetype)withUITesting:(BOOL)shouldInitializeForUITesting
+{
+  self.shouldInitializeForUITesting = shouldInitializeForUITesting;
+  return self;
+}
+
 - (instancetype)withTestsToRun:(NSSet<NSString *> *)testsToRun
 {
   self.testsToRun = testsToRun;
@@ -88,12 +94,6 @@
 - (instancetype)withTestsToSkip:(NSSet<NSString *> *)testsToSkip
 {
   self.testsToSkip = testsToSkip;
-  return self;
-}
-
-- (instancetype)withUITesting:(BOOL)shouldInitializeForUITesting
-{
-  self.shouldInitializeForUITesting = shouldInitializeForUITesting;
   return self;
 }
 
@@ -128,8 +128,8 @@
     testConfiguration.pathToXcodeReportingSocket = nil;
     testConfiguration.testsMustRunOnMainThread = self.shouldInitializeForUITesting;
     testConfiguration.initializeForUITesting = self.shouldInitializeForUITesting;
-    testConfiguration.testsToSkip = self.testsToSkip.count ? self.testsToSkip : nil;
-    testConfiguration.testsToRun = self.testsToRun.count ? self.testsToRun : nil;
+    testConfiguration.testsToSkip = self.testsToSkip;
+    testConfiguration.testsToRun = self.testsToRun;
     testConfiguration.targetApplicationPath = self.targetApplicationPath;
     testConfiguration.targetApplicationBundleID = self.targetApplicationBundleID;
     NSData *data = [NSKeyedArchiver archivedDataWithRootObject:testConfiguration];

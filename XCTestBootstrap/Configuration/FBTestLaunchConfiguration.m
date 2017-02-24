@@ -39,7 +39,7 @@
 + (instancetype)configurationWithTestBundlePath:(NSString *)testBundlePath
 {
   NSParameterAssert(testBundlePath);
-  return [[FBTestLaunchConfiguration alloc] initWithTestBundlePath:testBundlePath applicationLaunchConfiguration:nil testHostPath:nil timeout:0 testEnvironment:nil testsToRun:nil testsToSkip:nil initializeUITesting:NO targetApplicationBundleID:nil targetApplicationPath:nil];
+  return [[FBTestLaunchConfiguration alloc] initWithTestBundlePath:testBundlePath applicationLaunchConfiguration:nil testHostPath:nil timeout:0 testEnvironment:nil testsToRun:nil testsToSkip:[NSSet set] initializeUITesting:NO targetApplicationBundleID:nil targetApplicationPath:nil];
 }
 
 - (instancetype)withApplicationLaunchConfiguration:(FBApplicationLaunchConfiguration *)applicationLaunchConfiguration
@@ -214,11 +214,13 @@
 - (NSString *)description
 {
   return [NSString stringWithFormat:
-    @"FBTestLaunchConfiguration TestBundlePath %@ | AppConfig %@ | HostPath %@ | UITesting %d",
+    @"FBTestLaunchConfiguration TestBundlePath %@ | AppConfig %@ | HostPath %@ | UITesting %d | TestsToRun %@ | TestsToSkip %@",
     self.testBundlePath,
     self.applicationLaunchConfiguration,
     self.testHostPath,
-    self.shouldInitializeUITesting
+    self.shouldInitializeUITesting,
+    self.testsToRun,
+    self.testsToSkip
   ];
 }
 
@@ -241,8 +243,8 @@
     @"test_app_bundle_id" : self.applicationLaunchConfiguration ?: NSNull.null,
     @"test_host_path" : self.testHostPath ?: NSNull.null,
     @"test_environment": self.testEnvironment ?: NSNull.null,
-    @"tests_to_run": self.testsToRun.allObjects,
-    @"tests_to_skip": self.testsToSkip.allObjects,
+    @"tests_to_run": self.testsToRun.allObjects ?: NSNull.null,
+    @"tests_to_skip": self.testsToSkip.allObjects ?: NSNull.null,
     @"test_should_initialize_ui_testing": @(self.shouldInitializeUITesting),
     @"test_target_application_bundle_id": self.targetApplicationBundleID ?: NSNull.null,
     @"test_target_application_path": self.targetApplicationPath ?: NSNull.null,
