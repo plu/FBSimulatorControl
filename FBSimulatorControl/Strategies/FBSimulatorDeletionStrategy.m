@@ -94,7 +94,8 @@
       if ([self.set.deviceSet deleteDevice:simulator.device error:&innerError]) {
         break;
       }
-      if (![innerError.domain isEqualToString:NSCocoaErrorDomain] && innerError.code != NSFileWriteNoPermissionError) {
+      BOOL shouldRetry = [innerError.domain isEqualToString:NSCocoaErrorDomain] && innerError.code == NSFileWriteNoPermissionError;
+      if (!shouldRetry) {
         return [[[[[FBSimulatorError
           describe:@"Failed to delete simulator."]
           inSimulator:simulator]
