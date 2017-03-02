@@ -28,7 +28,6 @@
 #import "FBSimulatorControl.h"
 #import "FBSimulatorControlConfiguration.h"
 #import "FBSimulatorError.h"
-#import "FBSimulatorInteraction.h"
 #import "FBSimulatorPredicates.h"
 #import "FBSimulatorShutdownStrategy.h"
 #import "FBSimulatorProcessFetcher.h"
@@ -50,7 +49,7 @@
 
 + (instancetype)strategyForSet:(FBSimulatorSet *)set
 {
-  FBProcessTerminationStrategy *processTerminationStrategy = [FBProcessTerminationStrategy withProcessFetcher:set.processFetcher.processFetcher logger:set.logger];
+  FBProcessTerminationStrategy *processTerminationStrategy = [FBProcessTerminationStrategy strategyWithProcessFetcher:set.processFetcher.processFetcher logger:set.logger];
   return [[self alloc] initWithSet:set configuration:set.configuration processFetcher:set.processFetcher processTerminationStrategy:processTerminationStrategy logger:set.logger];
 }
 

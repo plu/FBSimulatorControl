@@ -323,7 +323,7 @@
 
 @implementation FBSimulatorBootStrategy
 
-+ (instancetype)withConfiguration:(FBSimulatorBootConfiguration *)configuration simulator:(FBSimulator *)simulator
++ (instancetype)strategyWithConfiguration:(FBSimulatorBootConfiguration *)configuration simulator:(FBSimulator *)simulator
 {
   if (configuration.shouldUsePersistentLaunch) {
     return FBControlCoreGlobalConfiguration.isXcode8OrGreater

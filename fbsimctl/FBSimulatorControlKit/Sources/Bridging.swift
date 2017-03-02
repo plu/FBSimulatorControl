@@ -16,18 +16,6 @@ extension FBSimulatorState {
   }}
 }
 
-class Interaction : NSObject, FBInteractionProtocol {
-  let interaction:(Void)throws -> Void
-
-  init(_ interaction: @escaping (Void) throws -> Void) {
-    self.interaction = interaction
-  }
-
-  func perform() throws {
-    return try self.interaction()
-  }
-}
-
 extension FBiOSTargetQuery {
   static func parseUDIDToken(_ token: String) throws -> String {
     if let _ = UUID(uuidString: token) {
@@ -130,6 +118,18 @@ extension FBiOSTargetFormatKey {
       FBiOSTargetFormatKey.architecture,
       FBiOSTargetFormatKey.processIdentifier,
       FBiOSTargetFormatKey.containerApplicationProcessIdentifier,
+    ]
+  }}
+}
+
+extension FBArchitecture {
+  public static var allFields: [FBArchitecture] { get {
+    return [
+      .I386,
+      .X86_64,
+      .armv7,
+      .armv7s,
+      .arm64,
     ]
   }}
 }

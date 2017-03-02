@@ -21,6 +21,11 @@
 #import "FBCompositeSimulatorEventSink.h"
 #import "FBMutableSimulatorEventSink.h"
 #import "FBSimulatorApplicationCommands.h"
+#import "FBSimulatorAgentCommands.h"
+#import "FBSimulatorBridgeCommands.h"
+#import "FBSimulatorXCTestCommands.h"
+#import "FBSimulatorLifecycleCommands.h"
+#import "FBSimulatorSettingsCommands.h"
 #import "FBSimulator+Helpers.h"
 #import "FBSimulatorConfiguration+CoreSimulator.h"
 #import "FBSimulatorConfiguration.h"
@@ -82,7 +87,7 @@
 - (instancetype)attachEventSinkCompositionWithLaunchdSimProcess:(nullable FBProcessInfo *)launchdSimProcess containerApplicationProcess:(nullable FBProcessInfo *)containerApplicationProcess
 {
   FBSimulatorHistoryGenerator *historyGenerator = [FBSimulatorHistoryGenerator forSimulator:self];
-  FBSimulatorNotificationEventSink *notificationSink = [FBSimulatorNotificationEventSink withSimulator:self];
+  FBSimulatorNotificationNameEventSink *notificationSink = [FBSimulatorNotificationNameEventSink withSimulator:self];
   FBSimulatorLoggingEventSink *loggingSink = [FBSimulatorLoggingEventSink withSimulator:self logger:self.logger];
   FBMutableSimulatorEventSink *mutableSink = [FBMutableSimulatorEventSink new];
   FBSimulatorDiagnostics *diagnosticsSink = [FBSimulatorDiagnostics withSimulator:self];
@@ -130,7 +135,7 @@
   return FBiOSTargetTypeSimulator;
 }
 
-- (NSString *)architecture
+- (FBArchitecture)architecture
 {
   return self.configuration.architecture;
 }
@@ -281,8 +286,14 @@
 + (NSArray *)commandRespondersForSimulator:(FBSimulator *)simulator
 {
   return @[
-    [FBSimulatorApplicationCommands withSimulator:simulator],
-    [FBSimulatorVideoRecordingCommands withSimulator:simulator],
+    [FBSimulatorAgentCommands commandsWithSimulator:simulator],
+    [FBSimulatorApplicationCommands commandsWithSimulator:simulator],
+    [FBSimulatorBridgeCommands commandsWithSimulator:simulator],
+    [FBSimulatorKeychainCommands commandsWithSimulator:simulator],
+    [FBSimulatorLifecycleCommands commandsWithSimulator:simulator],
+    [FBSimulatorSettingsCommands commandWithSimulator:simulator],
+    [FBSimulatorVideoRecordingCommands commandsWithSimulator:simulator],
+    [FBSimulatorXCTestCommands commandsWithSimulator:simulator],
   ];
 }
 

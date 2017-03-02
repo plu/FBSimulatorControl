@@ -241,9 +241,11 @@ extension IndividualCreationConfiguration : Parsable {
 
   static var deviceParser: Parser<FBControlCoreConfiguration_Device> {
     let desc = PrimitiveDesc(name: "device-name", desc: "Device Name.")
+
     return Parser.single(desc) { token in
-      let nameToDevice = FBControlCoreConfigurationVariants.nameToDevice()
-      guard let device = nameToDevice[token] else {
+      let nameToDevice = FBControlCoreConfigurationVariants.nameToDevice
+      let deviceName = FBDeviceName(rawValue: token)
+      guard let device = nameToDevice[deviceName] else {
         throw ParseError.custom("\(token) is not a valid device name")
       }
       return device
@@ -263,8 +265,9 @@ extension IndividualCreationConfiguration : Parsable {
   static var osVersionParser: Parser<FBControlCoreConfiguration_OS> {
     let desc = PrimitiveDesc(name: "os-version", desc: "OS Version.")
     return Parser.single(desc) { token in
-      let nameToOSVersion = FBControlCoreConfigurationVariants.nameToOSVersion()
-      guard let osVersion = nameToOSVersion[token] else {
+      let nameToOSVersion = FBControlCoreConfigurationVariants.nameToOSVersion
+      let osVersionName = FBOSVersionName(rawValue: token)
+      guard let osVersion = nameToOSVersion[osVersionName] else {
         throw ParseError.custom("\(token) is not a valid device name")
       }
       return osVersion
@@ -814,13 +817,14 @@ public struct FBiOSTargetQueryParsers {
   }
 
   static var architectureParser: Parser<FBiOSTargetQuery> {
-    return Parser<String>
-      .alternative(FBArchitecture.allArchitectures().map(architectureSubparser))
+    return Parser<FBArchitecture>
+      .alternative(FBArchitecture.allFields.map(architectureSubparser))
       .fmap { FBiOSTargetQuery.architectures([$0]) }
   }
 
-  static func architectureSubparser(_ architecture: String) -> Parser<String> {
-    return Parser<String>.ofFlag("arch=\(architecture)", architecture, "")
+  static func architectureSubparser(_ architecture: FBArchitecture) -> Parser<FBArchitecture> {
+    return Parser<FBArchitecture>
+      .ofFlag("arch=\(architecture.rawValue)", architecture, "")
   }
 
   static var simulatorStateParser: Parser<FBiOSTargetQuery> {

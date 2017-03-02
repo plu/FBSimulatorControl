@@ -11,8 +11,6 @@
 
 #import <FBControlCore/FBControlCore.h>
 
-#import "FBTestManagerTestReporter.h"
-
 @implementation FBTestLaunchConfiguration
 
 - (instancetype)initWithTestBundlePath:(NSString *)testBundlePath applicationLaunchConfiguration:(FBApplicationLaunchConfiguration *)applicationLaunchConfiguration testHostPath:(NSString *)testHostPath timeout:(NSTimeInterval)timeout testEnvironment:(NSDictionary<NSString *, NSString *> *)testEnvironment testsToRun:(NSSet<NSString *> *)testsToRun testsToSkip:(NSSet<NSString *> *)testsToSkip initializeUITesting:(BOOL)initializeUITesting targetApplicationBundleID:(NSString *)targetApplicationBundleID targetApplicationPath:(NSString *)targetApplicationPath

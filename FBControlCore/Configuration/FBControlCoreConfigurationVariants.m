@@ -11,6 +11,58 @@
 
 #import "FBArchitecture.h"
 
+FBDeviceName const FBDeviceNameiPhone4s = @"iPhone 4s";
+FBDeviceName const FBDeviceNameiPhone5 = @"iPhone 5";
+FBDeviceName const FBDeviceNameiPhone5s = @"iPhone 5s";
+FBDeviceName const FBDeviceNameiPhone6 = @"iPhone 6";
+FBDeviceName const FBDeviceNameiPhone6Plus = @"iPhone 6 Plus";
+FBDeviceName const FBDeviceNameiPhone6S = @"iPhone 6s";
+FBDeviceName const FBDeviceNameiPhone6SPlus = @"iPhone 6s Plus";
+FBDeviceName const FBDeviceNameiPhoneSE = @"iPhone SE";
+FBDeviceName const FBDeviceNameiPhone7 = @"iPhone 7";
+FBDeviceName const FBDeviceNameiPhone7Plus = @"iPhone 7 Plus";
+FBDeviceName const FBDeviceNameiPad2 = @"iPad 2";
+FBDeviceName const FBDeviceNameiPadRetina = @"iPad Retina";
+FBDeviceName const FBDeviceNameiPadAir = @"iPad Air";
+FBDeviceName const FBDeviceNameiPadAir2 = @"iPad Air 2";
+FBDeviceName const FBDeviceNameiPadPro = @"iPad Pro";
+FBDeviceName const FBDeviceNameiPadPro_9_7_Inch = @"iPad Pro (9.7-inch)";
+FBDeviceName const FBDeviceNameiPadPro_12_9_Inch = @"iPad Pro (12.9-inch)";
+FBDeviceName const FBDeviceNameAppleTV1080p = @"Apple TV 1080p";
+FBDeviceName const FBDeviceNameAppleWatch38mm = @"Apple Watch - 38mm";
+FBDeviceName const FBDeviceNameAppleWatch42mm = @"Apple Watch - 42mm";
+FBDeviceName const FBDeviceNameAppleWatchSeries2_38mm = @"Apple Watch Series 2 - 38mm";
+FBDeviceName const FBDeviceNameAppleWatchSeries2_42mm = @"Apple Watch Series 2 - 42mm";
+
+FBOSVersionName const FBOSVersionNameiOS_7_1 = @"iOS 7.1";
+FBOSVersionName const FBOSVersionNameiOS_8_0 = @"iOS 8.0";
+FBOSVersionName const FBOSVersionNameiOS_8_1 = @"iOS 8.1";
+FBOSVersionName const FBOSVersionNameiOS_8_2 = @"iOS 8.2";
+FBOSVersionName const FBOSVersionNameiOS_8_3 = @"iOS 8.3";
+FBOSVersionName const FBOSVersionNameiOS_8_4 = @"iOS 8.4";
+FBOSVersionName const FBOSVersionNameiOS_9_0 = @"iOS 9.0";
+FBOSVersionName const FBOSVersionNameiOS_9_1 = @"iOS 9.1";
+FBOSVersionName const FBOSVersionNameiOS_9_2 = @"iOS 9.2";
+FBOSVersionName const FBOSVersionNameiOS_9_3 = @"iOS 9.3";
+FBOSVersionName const FBOSVersionNameiOS_9_3_1 = @"iOS 9.3.1";
+FBOSVersionName const FBOSVersionNameiOS_9_3_2 = @"iOS 9.3.2";
+FBOSVersionName const FBOSVersionNameiOS_10_0 = @"iOS 10.0";
+FBOSVersionName const FBOSVersionNameiOS_10_1 = @"iOS 10.1";
+FBOSVersionName const FBOSVersionNameiOS_10_2 = @"iOS 10.2";
+FBOSVersionName const FBOSVersionNameiOS_10_3 = @"iOS 10.3";
+FBOSVersionName const FBOSVersionNametvOS_9_0 = @"tvOS 9.0";
+FBOSVersionName const FBOSVersionNametvOS_9_1 = @"tvOS 9.1";
+FBOSVersionName const FBOSVersionNametvOS_9_2 = @"tvOS 9.2";
+FBOSVersionName const FBOSVersionNametvOS_10_0 = @"tvOS 10.0";
+FBOSVersionName const FBOSVersionNametvOS_10_1 = @"tvOS 10.1";
+FBOSVersionName const FBOSVersionNametvOS_10_2 = @"tvOS 10.2";
+FBOSVersionName const FBOSVersionNamewatchOS_2_0 = @"watchOS 2.0";
+FBOSVersionName const FBOSVersionNamewatchOS_2_1 = @"watchOS 2.1";
+FBOSVersionName const FBOSVersionNamewatchOS_2_2 = @"watchOS 2.2";
+FBOSVersionName const FBOSVersionNamewatchOS_3_0 = @"watchOS 3.0";
+FBOSVersionName const FBOSVersionNamewatchOS_3_1 = @"watchOS 3.1";
+FBOSVersionName const FBOSVersionNamewatchOS_3_2 = @"watchOS 3.2";
+
 @implementation FBControlCoreConfigurationVariant_Base
 
 #pragma mark NSCoding
@@ -59,7 +111,7 @@
 
 #pragma mark Families
 
-@implementation FBSimulatorConfiguration_Family_iPhone
+@implementation FBControlCoreConfiguration_Family_iPhone
 
 - (FBControlCoreProductFamily)productFamilyID
 {
@@ -68,7 +120,7 @@
 
 @end
 
-@implementation FBSimulatorConfiguration_Family_iPad
+@implementation FBControlCoreConfiguration_Family_iPad
 
 - (FBControlCoreProductFamily)productFamilyID
 {
@@ -77,7 +129,7 @@
 
 @end
 
-@implementation FBSimulatorConfiguration_Family_TV
+@implementation FBControlCoreConfiguration_Family_TV
 
 - (FBControlCoreProductFamily)productFamilyID
 {
@@ -86,7 +138,7 @@
 
 @end
 
-@implementation FBSimulatorConfiguration_Family_Watch
+@implementation FBControlCoreConfiguration_Family_Watch
 
 - (FBControlCoreProductFamily)productFamilyID
 {
@@ -97,7 +149,7 @@
 
 @implementation FBControlCoreConfiguration_Device_iPhone_Base
 
-- (NSString *)deviceName
+- (FBDeviceName)deviceName
 {
   NSAssert(NO, @"-[%@ %@] is abstract and should be overridden", NSStringFromClass(self.class), NSStringFromSelector(_cmd));
   return nil;
@@ -109,21 +161,21 @@
   return nil;
 }
 
-- (NSString *)deviceArchitecture
+- (FBArchitecture)deviceArchitecture
 {
   NSAssert(NO, @"-[%@ %@] is abstract and should be overridden", NSStringFromClass(self.class), NSStringFromSelector(_cmd));
   return nil;
 }
 
-- (NSString *)simulatorArchitecture
+- (FBArchitecture)simulatorArchitecture
 {
   NSAssert(NO, @"-[%@ %@] is abstract and should be overridden", NSStringFromClass(self.class), NSStringFromSelector(_cmd));
   return nil;
 }
 
-- (id<FBSimulatorConfiguration_Family>)family
+- (id<FBControlCoreConfiguration_Family>)family
 {
-  return FBSimulatorConfiguration_Family_iPhone.new;
+  return FBControlCoreConfiguration_Family_iPhone.new;
 }
 
 @end
@@ -132,9 +184,9 @@
 
 @implementation FBControlCoreConfiguration_Device_iPhone4s
 
-- (NSString *)deviceName
+- (FBDeviceName)deviceName
 {
-  return @"iPhone 4s";
+  return FBDeviceNameiPhone4s;
 }
 
 - (NSSet<NSString *> *)productTypes
@@ -142,12 +194,12 @@
   return [NSSet setWithArray:@[@"iPhone4,1"]];
 }
 
-- (NSString *)deviceArchitecture
+- (FBArchitecture)deviceArchitecture
 {
   return FBArchitectureArmv7;
 }
 
-- (NSString *)simulatorArchitecture
+- (FBArchitecture)simulatorArchitecture
 {
   return FBArchitectureI386;
 }
@@ -156,9 +208,9 @@
 
 @implementation FBControlCoreConfiguration_Device_iPhone5
 
-- (NSString *)deviceName
+- (FBDeviceName)deviceName
 {
-  return @"iPhone 5";
+  return FBDeviceNameiPhone5;
 }
 
 - (NSSet<NSString *> *)productTypes
@@ -166,12 +218,12 @@
   return [NSSet setWithArray:@[@"iPhone5,1", @"iPhone5,2"]];
 }
 
-- (NSString *)deviceArchitecture
+- (FBArchitecture)deviceArchitecture
 {
   return FBArchitectureArmv7s;
 }
 
-- (NSString *)simulatorArchitecture
+- (FBArchitecture)simulatorArchitecture
 {
   return FBArchitectureI386;
 }
@@ -180,9 +232,9 @@
 
 @implementation FBControlCoreConfiguration_Device_iPhone5s
 
-- (NSString *)deviceName
+- (FBDeviceName)deviceName
 {
-  return @"iPhone 5s";
+  return FBDeviceNameiPhone5s;
 }
 
 - (NSSet<NSString *> *)productTypes
@@ -190,12 +242,12 @@
   return [NSSet setWithArray:@[@"iPhone6,1", @"iPhone6,2"]];
 }
 
-- (NSString *)deviceArchitecture
+- (FBArchitecture)deviceArchitecture
 {
   return FBArchitectureArm64;
 }
 
-- (NSString *)simulatorArchitecture
+- (FBArchitecture)simulatorArchitecture
 {
   return FBArchitectureX86_64;
 }
@@ -204,9 +256,9 @@
 
 @implementation FBControlCoreConfiguration_Device_iPhone6
 
-- (NSString *)deviceName
+- (FBDeviceName)deviceName
 {
-  return @"iPhone 6";
+  return FBDeviceNameiPhone6;
 }
 
 - (NSSet<NSString *> *)productTypes
@@ -214,12 +266,12 @@
   return [NSSet setWithArray:@[@"iPhone7,2"]];
 }
 
-- (NSString *)deviceArchitecture
+- (FBArchitecture)deviceArchitecture
 {
   return FBArchitectureArm64;
 }
 
-- (NSString *)simulatorArchitecture
+- (FBArchitecture)simulatorArchitecture
 {
   return FBArchitectureX86_64;
 }
@@ -228,9 +280,9 @@
 
 @implementation FBControlCoreConfiguration_Device_iPhone6Plus
 
-- (NSString *)deviceName
+- (FBDeviceName)deviceName
 {
-  return @"iPhone 6 Plus";
+  return FBDeviceNameiPhone6Plus;
 }
 
 - (NSSet<NSString *> *)productTypes
@@ -238,12 +290,12 @@
   return [NSSet setWithArray:@[@"iPhone7,1"]];
 }
 
-- (NSString *)deviceArchitecture
+- (FBArchitecture)deviceArchitecture
 {
   return FBArchitectureArm64;
 }
 
-- (NSString *)simulatorArchitecture
+- (FBArchitecture)simulatorArchitecture
 {
   return FBArchitectureX86_64;
 }
@@ -252,9 +304,9 @@
 
 @implementation FBControlCoreConfiguration_Device_iPhone6S
 
-- (NSString *)deviceName
+- (FBDeviceName)deviceName
 {
-  return @"iPhone 6s";
+  return FBDeviceNameiPhone6S;
 }
 
 - (NSSet<NSString *> *)productTypes
@@ -262,12 +314,12 @@
   return [NSSet setWithArray:@[@"iPhone8,1"]];
 }
 
-- (NSString *)deviceArchitecture
+- (FBArchitecture)deviceArchitecture
 {
   return FBArchitectureArm64;
 }
 
-- (NSString *)simulatorArchitecture
+- (FBArchitecture)simulatorArchitecture
 {
   return FBArchitectureX86_64;
 }
@@ -276,9 +328,9 @@
 
 @implementation FBControlCoreConfiguration_Device_iPhone6SPlus
 
-- (NSString *)deviceName
+- (FBDeviceName)deviceName
 {
-  return @"iPhone 6s Plus";
+  return FBDeviceNameiPhone6SPlus;
 }
 
 - (NSSet<NSString *> *)productTypes
@@ -286,12 +338,12 @@
   return [NSSet setWithArray:@[@"iPhone8,2"]];
 }
 
-- (NSString *)deviceArchitecture
+- (FBArchitecture)deviceArchitecture
 {
   return FBArchitectureArm64;
 }
 
-- (NSString *)simulatorArchitecture
+- (FBArchitecture)simulatorArchitecture
 {
   return FBArchitectureX86_64;
 }
@@ -300,9 +352,9 @@
 
 @implementation FBControlCoreConfiguration_Device_iPhoneSE
 
-- (NSString *)deviceName
+- (FBDeviceName)deviceName
 {
-  return @"iPhone SE";
+  return FBDeviceNameiPhoneSE;
 }
 
 - (NSSet<NSString *> *)productTypes
@@ -310,12 +362,12 @@
   return [NSSet setWithArray:@[@"iPhone8,4"]];
 }
 
-- (NSString *)deviceArchitecture
+- (FBArchitecture)deviceArchitecture
 {
   return FBArchitectureArm64;
 }
 
-- (NSString *)simulatorArchitecture
+- (FBArchitecture)simulatorArchitecture
 {
   return FBArchitectureX86_64;
 }
@@ -324,9 +376,9 @@
 
 @implementation FBControlCoreConfiguration_Device_iPhone7
 
-- (NSString *)deviceName
+- (FBDeviceName)deviceName
 {
-  return @"iPhone 7";
+  return FBDeviceNameiPhone7;
 }
 
 - (NSSet<NSString *> *)productTypes
@@ -334,12 +386,12 @@
   return [NSSet setWithArray:@[@"iPhone9,1", @"iPhone9,3"]];
 }
 
-- (NSString *)deviceArchitecture
+- (FBArchitecture)deviceArchitecture
 {
   return FBArchitectureArm64;
 }
 
-- (NSString *)simulatorArchitecture
+- (FBArchitecture)simulatorArchitecture
 {
   return FBArchitectureX86_64;
 }
@@ -348,12 +400,12 @@
 
 @implementation FBControlCoreConfiguration_Device_iPhone7Plus
 
-- (NSString *)deviceName
+- (FBDeviceName)deviceName
 {
-  return @"iPhone 7 Plus";
+  return FBDeviceNameiPhone7Plus;
 }
 
-- (NSString *)deviceArchitecture
+- (FBArchitecture)deviceArchitecture
 {
   return FBArchitectureArm64;
 }
@@ -363,7 +415,7 @@
   return [NSSet setWithArray:@[@"iPhone9,2", @"iPhone9,4"]];
 }
 
-- (NSString *)simulatorArchitecture
+- (FBArchitecture)simulatorArchitecture
 {
   return FBArchitectureX86_64;
 }
@@ -372,7 +424,7 @@
 
 @implementation FBControlCoreConfiguration_Device_iPad_Base
 
-- (NSString *)deviceName
+- (FBDeviceName)deviceName
 {
   NSAssert(NO, @"-[%@ %@] is abstract and should be overridden", NSStringFromClass(self.class), NSStringFromSelector(_cmd));
   return nil;
@@ -384,30 +436,30 @@
   return nil;
 }
 
-- (NSString *)deviceArchitecture
+- (FBArchitecture)deviceArchitecture
 {
   NSAssert(NO, @"-[%@ %@] is abstract and should be overridden", NSStringFromClass(self.class), NSStringFromSelector(_cmd));
   return nil;
 }
 
-- (NSString *)simulatorArchitecture
+- (FBArchitecture)simulatorArchitecture
 {
   NSAssert(NO, @"-[%@ %@] is abstract and should be overridden", NSStringFromClass(self.class), NSStringFromSelector(_cmd));
   return nil;
 }
 
-- (id<FBSimulatorConfiguration_Family>)family
+- (id<FBControlCoreConfiguration_Family>)family
 {
-  return FBSimulatorConfiguration_Family_iPad.new;
+  return FBControlCoreConfiguration_Family_iPad.new;
 }
 
 @end
 
 @implementation FBControlCoreConfiguration_Device_iPad2
 
-- (NSString *)deviceName
+- (FBDeviceName)deviceName
 {
-  return @"iPad 2";
+  return FBDeviceNameiPad2;
 }
 
 - (NSSet<NSString *> *)productTypes
@@ -415,12 +467,12 @@
   return [NSSet setWithArray:@[@"iPad2,1", @"iPad2,2", @"iPad2,3", @"iPad2,4"]];
 }
 
-- (NSString *)deviceArchitecture
+- (FBArchitecture)deviceArchitecture
 {
   return FBArchitectureArmv7;
 }
 
-- (NSString *)simulatorArchitecture
+- (FBArchitecture)simulatorArchitecture
 {
   return FBArchitectureI386;
 }
@@ -429,9 +481,9 @@
 
 @implementation FBControlCoreConfiguration_Device_iPadRetina
 
-- (NSString *)deviceName
+- (FBDeviceName)deviceName
 {
-  return @"iPad Retina";
+  return FBDeviceNameiPadRetina;
 }
 
 - (NSSet<NSString *> *)productTypes
@@ -440,12 +492,12 @@
   return [NSSet setWithArray:@[@"iPad3,1", @"iPad3,2", @"iPad3,3", @"iPad3,4", @"iPad3,5", @"iPad3,6"]];
 }
 
-- (NSString *)deviceArchitecture
+- (FBArchitecture)deviceArchitecture
 {
   return FBArchitectureArmv7;
 }
 
-- (NSString *)simulatorArchitecture
+- (FBArchitecture)simulatorArchitecture
 {
   return FBArchitectureI386;
 }
@@ -454,9 +506,9 @@
 
 @implementation FBControlCoreConfiguration_Device_iPadAir
 
-- (NSString *)deviceName
+- (FBDeviceName)deviceName
 {
-  return @"iPad Air";
+  return FBDeviceNameiPadAir;
 }
 
 - (NSSet<NSString *> *)productTypes
@@ -464,12 +516,12 @@
   return [NSSet setWithArray:@[@"iPad4,1", @"iPad4,2", @"iPad4,3"]];
 }
 
-- (NSString *)deviceArchitecture
+- (FBArchitecture)deviceArchitecture
 {
   return FBArchitectureArm64;
 }
 
-- (NSString *)simulatorArchitecture
+- (FBArchitecture)simulatorArchitecture
 {
   return FBArchitectureX86_64;
 }
@@ -478,9 +530,9 @@
 
 @implementation FBControlCoreConfiguration_Device_iPadAir2
 
-- (NSString *)deviceName
+- (FBDeviceName)deviceName
 {
-  return @"iPad Air 2";
+  return FBDeviceNameiPadAir2;
 }
 
 - (NSSet<NSString *> *)productTypes
@@ -488,12 +540,12 @@
   return [NSSet setWithArray:@[@"iPad5,3", @"iPad5,4"]];
 }
 
-- (NSString *)deviceArchitecture
+- (FBArchitecture)deviceArchitecture
 {
   return FBArchitectureArm64;
 }
 
-- (NSString *)simulatorArchitecture
+- (FBArchitecture)simulatorArchitecture
 {
   return FBArchitectureX86_64;
 }
@@ -502,9 +554,9 @@
 
 @implementation FBControlCoreConfiguration_Device_iPadPro
 
-- (NSString *)deviceName
+- (FBDeviceName)deviceName
 {
-  return @"iPad Pro";
+  return FBDeviceNameiPadPro;
 }
 
 - (NSSet<NSString *> *)productTypes
@@ -513,12 +565,12 @@
   return [NSSet setWithArray:@[@"iPad6,7", @"iPad6,8", @"iPad6,3", @"iPad6,4"]];
 }
 
-- (NSString *)deviceArchitecture
+- (FBArchitecture)deviceArchitecture
 {
   return FBArchitectureArm64;
 }
 
-- (NSString *)simulatorArchitecture
+- (FBArchitecture)simulatorArchitecture
 {
   return FBArchitectureX86_64;
 }
@@ -527,9 +579,9 @@
 
 @implementation FBControlCoreConfiguration_Device_iPadPro_9_7_Inch
 
-- (NSString *)deviceName
+- (FBDeviceName)deviceName
 {
-  return @"iPad Pro (9.7-inch)";
+  return FBDeviceNameiPadPro_9_7_Inch;
 }
 
 - (NSSet<NSString *> *)productTypes
@@ -537,12 +589,12 @@
   return [NSSet setWithArray:@[@"iPad6,3", @"iPad6,4"]];
 }
 
-- (NSString *)deviceArchitecture
+- (FBArchitecture)deviceArchitecture
 {
   return FBArchitectureArm64;
 }
 
-- (NSString *)simulatorArchitecture
+- (FBArchitecture)simulatorArchitecture
 {
   return FBArchitectureX86_64;
 }
@@ -551,9 +603,9 @@
 
 @implementation  FBControlCoreConfiguration_Device_iPadPro_12_9_Inch
 
-- (NSString *)deviceName
+- (FBDeviceName)deviceName
 {
-  return @"iPad Pro (12.9-inch)";
+  return FBDeviceNameiPadPro_12_9_Inch;
 }
 
 - (NSSet<NSString *> *)productTypes
@@ -561,12 +613,12 @@
   return [NSSet setWithArray:@[@"iPad6,7", @"iPad6,8"]];
 }
 
-- (NSString *)deviceArchitecture
+- (FBArchitecture)deviceArchitecture
 {
   return FBArchitectureArm64;
 }
 
-- (NSString *)simulatorArchitecture
+- (FBArchitecture)simulatorArchitecture
 {
   return FBArchitectureX86_64;
 }
@@ -575,7 +627,7 @@
 
 @implementation FBControlCoreConfiguration_Device_tvOS_Base
 
-- (NSString *)deviceName
+- (FBDeviceName)deviceName
 {
   NSAssert(NO, @"-[%@ %@] is abstract and should be overridden", NSStringFromClass(self.class), NSStringFromSelector(_cmd));
   return nil;
@@ -587,30 +639,30 @@
   return nil;
 }
 
-- (NSString *)deviceArchitecture
+- (FBArchitecture)deviceArchitecture
 {
   NSAssert(NO, @"-[%@ %@] is abstract and should be overridden", NSStringFromClass(self.class), NSStringFromSelector(_cmd));
   return nil;
 }
 
-- (NSString *)simulatorArchitecture
+- (FBArchitecture)simulatorArchitecture
 {
   NSAssert(NO, @"-[%@ %@] is abstract and should be overridden", NSStringFromClass(self.class), NSStringFromSelector(_cmd));
   return nil;
 }
 
-- (id<FBSimulatorConfiguration_Family>)family
+- (id<FBControlCoreConfiguration_Family>)family
 {
-  return FBSimulatorConfiguration_Family_TV.new;
+  return FBControlCoreConfiguration_Family_TV.new;
 }
 
 @end
 
 @implementation FBControlCoreConfiguration_Device_AppleTV1080p
 
-- (NSString *)deviceName
+- (FBDeviceName)deviceName
 {
-  return @"Apple TV 1080p";
+  return FBDeviceNameAppleTV1080p;
 }
 
 - (NSSet<NSString *> *)productTypes
@@ -618,12 +670,12 @@
   return [NSSet setWithArray:@[@"AppleTV5,3"]];
 }
 
-- (NSString *)deviceArchitecture
+- (FBArchitecture)deviceArchitecture
 {
   return FBArchitectureArm64;
 }
 
-- (NSString *)simulatorArchitecture
+- (FBArchitecture)simulatorArchitecture
 {
   return FBArchitectureX86_64;
 }
@@ -632,7 +684,7 @@
 
 @implementation FBControlCoreConfiguration_Device_watchOS_Base
 
-- (NSString *)deviceName
+- (FBDeviceName)deviceName
 {
   NSAssert(NO, @"-[%@ %@] is abstract and should be overridden", NSStringFromClass(self.class), NSStringFromSelector(_cmd));
   return nil;
@@ -644,30 +696,30 @@
   return nil;
 }
 
-- (NSString *)deviceArchitecture
+- (FBArchitecture)deviceArchitecture
 {
   NSAssert(NO, @"-[%@ %@] is abstract and should be overridden", NSStringFromClass(self.class), NSStringFromSelector(_cmd));
   return nil;
 }
 
-- (NSString *)simulatorArchitecture
+- (FBArchitecture)simulatorArchitecture
 {
   NSAssert(NO, @"-[%@ %@] is abstract and should be overridden", NSStringFromClass(self.class), NSStringFromSelector(_cmd));
   return nil;
 }
 
-- (id<FBSimulatorConfiguration_Family>)family
+- (id<FBControlCoreConfiguration_Family>)family
 {
-  return FBSimulatorConfiguration_Family_Watch.new;
+  return FBControlCoreConfiguration_Family_Watch.new;
 }
 
 @end
 
 @implementation FBControlCoreConfiguration_Device_AppleWatch38mm
 
-- (NSString *)deviceName
+- (FBDeviceName)deviceName
 {
-  return @"Apple Watch - 38mm";
+  return FBDeviceNameAppleWatch38mm;
 }
 
 - (NSSet<NSString *> *)productTypes
@@ -675,12 +727,12 @@
   return [NSSet setWithArray:@[@"Watch1,1"]];
 }
 
-- (NSString *)deviceArchitecture
+- (FBArchitecture)deviceArchitecture
 {
   return FBArchitectureArmv7;
 }
 
-- (NSString *)simulatorArchitecture
+- (FBArchitecture)simulatorArchitecture
 {
   return FBArchitectureI386;
 }
@@ -689,9 +741,9 @@
 
 @implementation FBControlCoreConfiguration_Device_AppleWatch42mm
 
-- (NSString *)deviceName
+- (FBDeviceName)deviceName
 {
-  return @"Apple Watch - 42mm";
+  return FBDeviceNameAppleWatch42mm;
 }
 
 - (NSSet<NSString *> *)productTypes
@@ -699,12 +751,12 @@
   return [NSSet setWithArray:@[@"Watch1,2"]];
 }
 
-- (NSString *)deviceArchitecture
+- (FBArchitecture)deviceArchitecture
 {
   return FBArchitectureArmv7;
 }
 
-- (NSString *)simulatorArchitecture
+- (FBArchitecture)simulatorArchitecture
 {
   return FBArchitectureI386;
 }
@@ -713,9 +765,9 @@
 
 @implementation FBControlCoreConfiguration_Device_AppleWatchSeries2_38mm
 
-- (NSString *)deviceName
+- (FBDeviceName)deviceName
 {
-  return @"Apple Watch Series 2 - 38mm";
+  return FBDeviceNameAppleWatchSeries2_38mm;
 }
 
 - (NSSet<NSString *> *)productTypes
@@ -723,12 +775,12 @@
   return [NSSet setWithArray:@[@"Watch2,1"]];
 }
 
-- (NSString *)deviceArchitecture
+- (FBArchitecture)deviceArchitecture
 {
   return FBArchitectureArmv7;
 }
 
-- (NSString *)simulatorArchitecture
+- (FBArchitecture)simulatorArchitecture
 {
   return FBArchitectureI386;
 }
@@ -737,9 +789,9 @@
 
 @implementation FBControlCoreConfiguration_Device_AppleWatchSeries2_42mm
 
-- (NSString *)deviceName
+- (FBDeviceName)deviceName
 {
-  return @"Apple Watch Series 2 - 42mm";
+  return FBDeviceNameAppleWatchSeries2_42mm;
 }
 
 - (NSSet<NSString *> *)productTypes
@@ -747,12 +799,12 @@
   return [NSSet setWithArray:@[@"Watch2,2"]];
 }
 
-- (NSString *)deviceArchitecture
+- (FBArchitecture)deviceArchitecture
 {
   return FBArchitectureArmv7;
 }
 
-- (NSString *)simulatorArchitecture
+- (FBArchitecture)simulatorArchitecture
 {
   return FBArchitectureI386;
 }
@@ -763,7 +815,7 @@
 
 @implementation FBControlCoreConfiguration_OS_Base
 
-- (NSString *)name
+- (FBOSVersionName)name
 {
   NSAssert(NO, @"-[%@ %@] is abstract and should be overridden", NSStringFromClass(self.class), NSStringFromSelector(_cmd));
   return nil;
@@ -788,8 +840,8 @@
 - (NSSet *)families
 {
   return [NSSet setWithArray:@[
-    FBSimulatorConfiguration_Family_iPhone.new,
-    FBSimulatorConfiguration_Family_iPad.new,
+    FBControlCoreConfiguration_Family_iPhone.new,
+    FBControlCoreConfiguration_Family_iPad.new,
   ]];
 }
 
@@ -797,151 +849,151 @@
 
 @implementation FBControlCoreConfiguration_iOS_7_1
 
-- (NSString *)name
+- (FBOSVersionName)name
 {
-  return @"iOS 7.1";
+  return FBOSVersionNameiOS_7_1;
 }
 
 @end
 
 @implementation FBControlCoreConfiguration_iOS_8_0
 
-- (NSString *)name
+- (FBOSVersionName)name
 {
-  return @"iOS 8.0";
+  return FBOSVersionNameiOS_8_0;
 }
 
 @end
 
 @implementation FBControlCoreConfiguration_iOS_8_1
 
-- (NSString *)name
+- (FBOSVersionName)name
 {
-  return @"iOS 8.1";
+  return FBOSVersionNameiOS_8_1;
 }
 
 @end
 
 @implementation FBControlCoreConfiguration_iOS_8_2
 
-- (NSString *)name
+- (FBOSVersionName)name
 {
-  return @"iOS 8.2";
+  return FBOSVersionNameiOS_8_2;
 }
 
 @end
 
 @implementation FBControlCoreConfiguration_iOS_8_3
 
-- (NSString *)name
+- (FBOSVersionName)name
 {
-  return @"iOS 8.3";
+  return FBOSVersionNameiOS_8_3;
 }
 
 @end
 
 @implementation FBControlCoreConfiguration_iOS_8_4
 
-- (NSString *)name
+- (FBOSVersionName)name
 {
-  return @"iOS 8.4";
+  return FBOSVersionNameiOS_8_4;
 }
 
 @end
 
 @implementation FBControlCoreConfiguration_iOS_9_0
 
-- (NSString *)name
+- (FBOSVersionName)name
 {
-  return @"iOS 9.0";
+  return FBOSVersionNameiOS_9_0;
 }
 
 @end
 
 @implementation FBControlCoreConfiguration_iOS_9_1
 
-- (NSString *)name
+- (FBOSVersionName)name
 {
-  return @"iOS 9.1";
+  return FBOSVersionNameiOS_9_1;
 }
 
 @end
 
 @implementation FBControlCoreConfiguration_iOS_9_2
 
-- (NSString *)name
+- (FBOSVersionName)name
 {
-  return @"iOS 9.2";
+  return FBOSVersionNameiOS_9_2;
 }
 
 @end
 
 @implementation FBControlCoreConfiguration_iOS_9_3
 
-- (NSString *)name
+- (FBOSVersionName)name
 {
-  return @"iOS 9.3";
+  return FBOSVersionNameiOS_9_3;
 }
 
 @end
 
 @implementation FBControlCoreConfiguration_iOS_9_3_1
 
-- (NSString *)name
+- (FBOSVersionName)name
 {
-  return @"iOS 9.3.1";
+  return FBOSVersionNameiOS_9_3_1;
 }
 
 @end
 
 @implementation FBControlCoreConfiguration_iOS_9_3_2
 
-- (NSString *)name
+- (FBOSVersionName)name
 {
-  return @"iOS 9.3.2";
+  return FBOSVersionNameiOS_9_3_2;
 }
 
 @end
 
 @implementation FBControlCoreConfiguration_iOS_10_0
 
-- (NSString *)name
+- (FBOSVersionName)name
 {
-  return @"iOS 10.0";
+  return FBOSVersionNameiOS_10_0;
 }
 
 @end
 
 @implementation FBControlCoreConfiguration_iOS_10_1
 
-- (NSString *)name
+- (FBOSVersionName)name
 {
-  return @"iOS 10.1";
+  return FBOSVersionNameiOS_10_1;
 }
 
 @end
 
 @implementation FBControlCoreConfiguration_iOS_10_2
 
-- (NSString *)name
+- (FBOSVersionName)name
 {
-  return @"iOS 10.2";
+  return FBOSVersionNameiOS_10_2;
 }
 
 @end
 
 @implementation FBControlCoreConfiguration_iOS_10_3
 
-- (NSString *)name
+- (FBOSVersionName)name
 {
-  return @"iOS 10.3";
+  return FBOSVersionNameiOS_10_3;
 }
 
 @end
 
 @implementation FBControlCoreConfiguration_tvOS_Base
 
-- (NSString *)name
+- (FBOSVersionName)name
 {
   NSAssert(NO, @"-[%@ %@] is abstract and should be overridden", NSStringFromClass(self.class), NSStringFromSelector(_cmd));
   return nil;
@@ -949,68 +1001,68 @@
 
 - (NSSet *)families
 {
-  return [NSSet setWithObject:FBSimulatorConfiguration_Family_TV.new];
+  return [NSSet setWithObject:FBControlCoreConfiguration_Family_TV.new];
 }
 
 @end
 
 @implementation FBControlCoreConfiguration_tvOS_9_0
 
-- (NSString *)name
+- (FBOSVersionName)name
 {
-  return @"tvOS 9.0";
+  return FBOSVersionNametvOS_9_0;
 }
 
 @end
 
 @implementation FBControlCoreConfiguration_tvOS_9_1
 
-- (NSString *)name
+- (FBOSVersionName)name
 {
-  return @"tvOS 9.1";
+  return FBOSVersionNametvOS_9_1;
 }
 
 @end
 
 @implementation FBControlCoreConfiguration_tvOS_9_2
 
-- (NSString *)name
+- (FBOSVersionName)name
 {
-  return @"tvOS 9.2";
+  return FBOSVersionNametvOS_9_2;
 }
 
 @end
 
 @implementation FBControlCoreConfiguration_tvOS_10_0
 
-- (NSString *)name
+- (FBOSVersionName)name
 {
-  return @"tvOS 10.0";
+  return FBOSVersionNametvOS_10_0;
 }
 
 @end
 
 @implementation FBControlCoreConfiguration_tvOS_10_1
 
-- (NSString *)name
+- (FBOSVersionName)name
 {
-  return @"tvOS 10.1";
+  return FBOSVersionNametvOS_10_1;
 }
 
 @end
 
 @implementation FBControlCoreConfiguration_tvOS_10_2
 
-- (NSString *)name
+- (FBOSVersionName)name
 {
-  return @"tvOS 10.2";
+  return FBOSVersionNametvOS_10_2;
 }
 
 @end
 
 @implementation FBControlCoreConfiguration_watchOS_Base
 
-- (NSString *)name
+- (FBOSVersionName)name
 {
   NSAssert(NO, @"-[%@ %@] is abstract and should be overridden", NSStringFromClass(self.class), NSStringFromSelector(_cmd));
   return nil;
@@ -1018,61 +1070,61 @@
 
 - (NSSet *)families
 {
-  return [NSSet setWithObject:FBSimulatorConfiguration_Family_Watch.new];
+  return [NSSet setWithObject:FBControlCoreConfiguration_Family_Watch.new];
 }
 
 @end
 
 @implementation FBControlCoreConfiguration_watchOS_2_0
 
-- (NSString *)name
+- (FBOSVersionName)name
 {
-  return @"watchOS 2.0";
+  return FBOSVersionNamewatchOS_2_0;
 }
 
 @end
 
 @implementation FBControlCoreConfiguration_watchOS_2_1
 
-- (NSString *)name
+- (FBOSVersionName)name
 {
-  return @"watchOS 2.1";
+  return FBOSVersionNamewatchOS_2_1;
 }
 
 @end
 
 @implementation FBControlCoreConfiguration_watchOS_2_2
 
-- (NSString *)name
+- (FBOSVersionName)name
 {
-  return @"watchOS 2.2";
+  return FBOSVersionNamewatchOS_2_2;
 }
 
 @end
 
 @implementation FBControlCoreConfiguration_watchOS_3_0
 
-- (NSString *)name
+- (FBOSVersionName)name
 {
-  return @"watchOS 3.0";
+  return FBOSVersionNamewatchOS_3_0;
 }
 
 @end
 
 @implementation FBControlCoreConfiguration_watchOS_3_1
 
-- (NSString *)name
+- (FBOSVersionName)name
 {
-  return @"watchOS 3.1";
+  return FBOSVersionNamewatchOS_3_1;
 }
 
 @end
 
 @implementation FBControlCoreConfiguration_watchOS_3_2
 
-- (NSString *)name
+- (FBOSVersionName)name
 {
-  return @"watchOS 3.2";
+  return FBOSVersionNamewatchOS_3_2;
 }
 
 @end
@@ -1153,13 +1205,13 @@
   return OSConfigurations;
 }
 
-+ (NSDictionary<NSString *, id<FBControlCoreConfiguration_Device>> *)nameToDevice
++ (NSDictionary<FBDeviceName, id<FBControlCoreConfiguration_Device>> *)nameToDevice
 {
   static dispatch_once_t onceToken;
-  static NSDictionary<NSString *, id<FBControlCoreConfiguration_Device>> *mapping;
+  static NSDictionary<FBDeviceName, id<FBControlCoreConfiguration_Device>> *mapping;
   dispatch_once(&onceToken, ^{
     NSArray *instances = self.deviceConfigurations;
-    NSMutableDictionary<NSString *, id<FBControlCoreConfiguration_Device>> *dictionary = [NSMutableDictionary dictionary];
+    NSMutableDictionary<FBDeviceName, id<FBControlCoreConfiguration_Device>> *dictionary = [NSMutableDictionary dictionary];
     for (id<FBControlCoreConfiguration_Device> device in instances) {
       dictionary[device.deviceName] = device;
     }
@@ -1185,13 +1237,13 @@
   return mapping;
 }
 
-+ (NSDictionary<NSString *, id<FBControlCoreConfiguration_OS>> *)nameToOSVersion
++ (NSDictionary<FBOSVersionName, id<FBControlCoreConfiguration_OS>> *)nameToOSVersion
 {
   static dispatch_once_t onceToken;
-  static NSDictionary<NSString *, id<FBControlCoreConfiguration_OS>> *mapping;
+  static NSDictionary<FBOSVersionName, id<FBControlCoreConfiguration_OS>> *mapping;
   dispatch_once(&onceToken, ^{
     NSArray *instances = self.OSConfigurations;
-    NSMutableDictionary<NSString *, id<FBControlCoreConfiguration_OS>> *dictionary = [NSMutableDictionary dictionary];
+    NSMutableDictionary<FBOSVersionName, id<FBControlCoreConfiguration_OS>> *dictionary = [NSMutableDictionary dictionary];
     for (id<FBControlCoreConfiguration_OS> os in instances) {
       dictionary[os.name] = os;
     }
@@ -1200,7 +1252,7 @@
   return mapping;
 }
 
-+ (NSDictionary<NSString *, NSSet<NSString *> *> *)baseArchToCompatibleArch
++ (NSDictionary<FBArchitecture, NSSet<FBArchitecture> *> *)baseArchToCompatibleArch
 {
   return @{
     FBArchitectureArm64 : [NSSet setWithArray:@[FBArchitectureArm64, FBArchitectureArmv7s, FBArchitectureArmv7]],
