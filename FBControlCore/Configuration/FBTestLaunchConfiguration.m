@@ -25,8 +25,8 @@
   _testHostPath = testHostPath;
   _timeout = timeout;
   _testEnvironment = testEnvironment;
-  _testsToRun = testsToRun ?: [NSSet set];
-  _testsToSkip = testsToSkip ?: [NSSet set];
+  _testsToRun = testsToRun;
+  _testsToSkip = testsToSkip;
   _shouldInitializeUITesting = initializeUITesting;
   _targetApplicationBundleID = targetApplicationBundleID;
   _targetApplicationPath = targetApplicationPath;

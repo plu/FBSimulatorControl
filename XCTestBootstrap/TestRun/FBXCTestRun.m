@@ -141,8 +141,8 @@
 
 - (FBTestLaunchConfiguration *)testLaunchConfigurationWithTestRunSpecification:(IDETestRunSpecification *)testRunSpecification application:(FBApplicationDescriptor *)application
 {
-  NSSet *testsToSkip = testRunSpecification.testIdentifiersToSkip ?: [NSSet set];
-  NSSet *testsToRun = testRunSpecification.testIdentifiersToRun ?: [NSSet set];
+  NSSet *testsToSkip = testRunSpecification.testIdentifiersToSkip;
+  NSSet *testsToRun = testRunSpecification.testIdentifiersToRun;
 
   NSArray *commandLineArguments = testRunSpecification.commandLineArguments ?: @[];
   NSDictionary *environment = testRunSpecification.environmentVariables ?: @{};
