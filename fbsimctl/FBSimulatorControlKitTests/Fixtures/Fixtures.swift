@@ -21,7 +21,7 @@ struct Fixtures {
   }}
 
   static var binary: FBBinaryDescriptor { get {
-    let basePath: NSString = FBControlCoreGlobalConfiguration.developerDirectory() as NSString
+    let basePath: NSString = FBControlCoreGlobalConfiguration.developerDirectory as NSString
     return try! FBBinaryDescriptor.binary(
       withPath: basePath.appendingPathComponent("Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/sbin/launchd_sim")
     )
@@ -51,37 +51,37 @@ struct Fixtures {
 extension CreationSpecification {
   static var empty: CreationSpecification { get {
     return CreationSpecification.individual(
-      IndividualCreationConfiguration(osVersion: nil, deviceType: nil, auxDirectory: nil)
+      IndividualCreationConfiguration(os: nil, model: nil, auxDirectory: nil)
     )
   }}
 
   static var iOS9CreationSpecification: CreationSpecification { get {
     return CreationSpecification.individual(
-      IndividualCreationConfiguration(osVersion: FBControlCoreConfiguration_iOS_9_0(), deviceType: nil, auxDirectory: nil)
+      IndividualCreationConfiguration(os: .nameiOS_9_0, model: nil, auxDirectory: nil)
     )
   }}
 
   static var iPhone6Configuration: CreationSpecification { get {
     return CreationSpecification.individual(
-      IndividualCreationConfiguration(osVersion: nil, deviceType: FBControlCoreConfiguration_Device_iPhone6(), auxDirectory: nil)
+      IndividualCreationConfiguration(os: nil, model: .modeliPhone6, auxDirectory: nil)
     )
   }}
 
   static var auxDirectoryConfiguration: CreationSpecification { get {
     return CreationSpecification.individual(
-      IndividualCreationConfiguration(osVersion: nil, deviceType: nil, auxDirectory: "/usr/bin")
+      IndividualCreationConfiguration(os: nil, model: nil, auxDirectory: "/usr/bin")
     )
   }}
 
   static var compoundConfiguration0: CreationSpecification { get {
     return CreationSpecification.individual(
-      IndividualCreationConfiguration(osVersion: FBControlCoreConfiguration_iOS_9_3(), deviceType: FBControlCoreConfiguration_Device_iPhone6S(), auxDirectory: nil)
+      IndividualCreationConfiguration(os: .nameiOS_9_3, model: .modeliPhone6S, auxDirectory: nil)
     )
   }}
 
   static var compoundConfiguration1: CreationSpecification { get {
     return CreationSpecification.individual(
-      IndividualCreationConfiguration(osVersion: FBControlCoreConfiguration_iOS_10_0(), deviceType: FBControlCoreConfiguration_Device_iPadAir2(), auxDirectory: nil)
+      IndividualCreationConfiguration(os: .nameiOS_10_0, model: .modeliPadAir2, auxDirectory: nil)
     )
   }}
 }

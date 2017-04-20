@@ -19,6 +19,8 @@
 #import <objc/runtime.h>
 
 #import "FBFramebuffer.h"
+#import "FBFramebufferConfiguration.h"
+#import "FBFramebufferSurface.h"
 #import "FBSimulator+Helpers.h"
 #import "FBSimulator+Private.h"
 #import "FBSimulator.h"
@@ -27,7 +29,6 @@
 #import "FBSimulatorError.h"
 #import "FBSimulatorError.h"
 #import "FBSimulatorEventSink.h"
-#import "FBFramebufferConfiguration.h"
 
 @interface FBFramebufferConnectStrategy ()
 
@@ -87,9 +88,9 @@
 
 - (nullable FBFramebuffer *)connect:(FBSimulator *)simulator error:(NSError **)error
 {
-  return [[FBFramebuffer
-    withIOClient:(SimDeviceIOClient *)simulator.device.io configuration:self.configuration simulator:simulator]
-    startListeningInBackground];
+  FBFramebufferSurface *renderable = [FBFramebufferSurface mainScreenSurfaceForClient:(SimDeviceIOClient *)simulator.device.io];
+  FBFramebuffer *framebuffer = [FBFramebuffer framebufferWithRenderable:renderable configuration:self.configuration simulator:simulator];
+  return framebuffer;
 }
 
 @end
@@ -107,9 +108,8 @@
   if (!mainScreenService) {
     return [FBSimulatorError failWithError:innerError errorOut:error];
   }
-  return [[FBFramebuffer
-    withFramebufferService:mainScreenService configuration:self.configuration simulator:simulator]
-    startListeningInBackground];
+  FBFramebuffer *framebuffer = [FBFramebuffer framebufferWithService:mainScreenService configuration:self.configuration simulator:simulator];
+  return framebuffer;
 }
 
 - (BOOL)meetsPreconditionsForConnectingToSimulator:(FBSimulator *)simulator error:(NSError **)error

@@ -94,13 +94,6 @@ static id<FBControlCoreLogger> logger;
   return 30;
 }
 
-+ (dispatch_time_t)regularDispatchTimeout
-{
-  NSTimeInterval timeout = self.regularTimeout;
-  int64_t timeoutInt = ((int64_t) timeout) * ((int64_t) NSEC_PER_SEC);
-  return dispatch_time(DISPATCH_TIME_NOW, timeoutInt);
-}
-
 + (NSTimeInterval)slowTimeout
 {
   return 120;
@@ -133,12 +126,31 @@ static id<FBControlCoreLogger> logger;
   return logger;
 }
 
++ (void)setDefaultLogger:(id<FBControlCoreLogger>)defaultLogger
+{
+  if (logger) {
+    [defaultLogger logFormat:@"Overriding the Default Logger with %@", defaultLogger];
+  }
+  logger = defaultLogger;
+}
+
++ (BOOL)debugLoggingEnabled
+{
+  return [NSProcessInfo.processInfo.environment[FBControlCoreDebugLogging] boolValue];
+}
+
++ (void)setDebugLoggingEnabled:(BOOL)enabled
+{
+  setenv(FBControlCoreDebugLogging.UTF8String, enabled ? "YES" : "NO", 1);
+}
+
 + (NSString *)description
 {
   return [NSString stringWithFormat:
-    @"Developer Directory %@ | iOS SDK Version %@ | Supports Custom Device Sets %d | Debug Logging Enabled %d",
+    @"Developer Directory %@ | Xcode Version %@ | iOS SDK Version %@ | Supports Custom Device Sets %d | Debug Logging Enabled %d",
     self.developerDirectory,
-    self.iosSDKVersion,
+    self.xcodeVersionNumber,
+    self.iosSDKVersionNumber,
     self.supportsCustomDeviceSets,
     self.debugLoggingEnabled
   ];
@@ -149,21 +161,6 @@ static id<FBControlCoreLogger> logger;
   return [FBControlCoreGlobalConfiguration description];
 }
 
-+ (BOOL)debugLoggingEnabled
-{
-  return [NSProcessInfo.processInfo.environment[FBControlCoreDebugLogging] boolValue];
-}
-
-+ (nullable id)readValueForKey:(NSString *)key fromPlistAtPath:(NSString *)plistPath
-{
-  NSCAssert([NSFileManager.defaultManager fileExistsAtPath:plistPath], @"plist does not exist at path '%@'", plistPath);
-  NSDictionary *infoPlist = [NSDictionary dictionaryWithContentsOfFile:plistPath];
-  NSCAssert(infoPlist, @"Could not read plist at '%@'", plistPath);
-  id value = infoPlist[key];
-  NSCAssert(value, @"'%@' does not exist in plist '%@'", key, infoPlist.allKeys);
-  return value;
-}
-
 #pragma mark FBJSONConversion
 
 - (id)jsonSerializableRepresentation
@@ -171,6 +168,7 @@ static id<FBControlCoreLogger> logger;
   return @{
      @"developer_directory" : FBControlCoreGlobalConfiguration.developerDirectory,
      @"xcode_version" : FBControlCoreGlobalConfiguration.xcodeVersionNumber,
+     @"ios_sdk_version" : FBControlCoreGlobalConfiguration.iosSDKVersionNumber,
   };
 }
 
@@ -178,7 +176,7 @@ static id<FBControlCoreLogger> logger;
 
 + (id<FBControlCoreLogger>)createDefaultLogger
 {
-  return [FBControlCoreLogger aslLoggerWritingToStderrr:self.stderrLoggingEnabled withDebugLogging:self.debugLoggingEnabled];
+  return [FBControlCoreLogger systemLoggerWritingToStderrr:self.stderrLoggingEnabled withDebugLogging:self.debugLoggingEnabled];
 }
 
 + (BOOL)stderrLoggingEnabled
@@ -212,22 +210,19 @@ static id<FBControlCoreLogger> logger;
   return directory;
 }
 
++ (nullable id)readValueForKey:(NSString *)key fromPlistAtPath:(NSString *)plistPath
+{
+  NSCAssert([NSFileManager.defaultManager fileExistsAtPath:plistPath], @"plist does not exist at path '%@'", plistPath);
+  NSDictionary *infoPlist = [NSDictionary dictionaryWithContentsOfFile:plistPath];
+  NSCAssert(infoPlist, @"Could not read plist at '%@'", plistPath);
+  id value = infoPlist[key];
+  NSCAssert(value, @"'%@' does not exist in plist '%@'", key, infoPlist.allKeys);
+  return value;
+}
+
 @end
 
-@implementation FBControlCoreGlobalConfiguration (Environment)
-
-+ (void)setDefaultLogger:(id<FBControlCoreLogger>)defaultLogger
-{
-  if (logger) {
-    [defaultLogger logFormat:@"Overriding the Default Logger with %@", defaultLogger];
-  }
-  logger = defaultLogger;
-}
-
-+ (void)setDebugLoggingEnabled:(BOOL)enabled
-{
-  setenv(FBControlCoreDebugLogging.UTF8String, enabled ? "YES" : "NO", 1);
-}
+@implementation FBControlCoreGlobalConfiguration (Setters)
 
 + (void)setDefaultLoggerToASLWithStderrLogging:(BOOL)stderrLogging debugLogging:(BOOL)debugLogging
 {

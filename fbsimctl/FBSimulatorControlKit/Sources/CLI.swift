@@ -28,28 +28,31 @@ public struct OutputOptions : OptionSet {
  */
 public struct Help {
   let outputOptions: OutputOptions
-  let userInitiated: Bool
+  let error: (Error & CustomStringConvertible)?
   let command: Command?
+}
+extension Help : Equatable {}
+public func == (left: Help, right: Help) -> Bool {
+  return left.outputOptions == right.outputOptions && left.command == right.command
 }
 
 public enum CLI {
-  case show(Help)
+  case print(Action)
   case run(Command)
+  case show(Help)
 }
 
-public extension CLI {
-  public static func fromArguments(_ arguments: [String], environment: [String : String]) -> CLI {
-    let help = Help(outputOptions: OutputOptions(), userInitiated: false, command: nil)
-
-    do {
-      let (_, cli) = try CLI.parser.parse(arguments)
-      return cli.appendEnvironment(environment)
-    } catch let error as ParseError {
-      print("Failed to Parse Command \(error)")
-      return CLI.show(help)
-    } catch let error as NSError {
-      print("Failed to Parse Command \(error)")
-      return CLI.show(help)
-    }
+extension CLI : Equatable {}
+public func == (left: CLI, right: CLI) -> Bool {
+  switch (left, right) {
+    case (.show(let leftHelp), .show(let rightHelp)):
+      return leftHelp == rightHelp
+    case (.run(let leftCommand), .run(let rightCommand)):
+      return leftCommand == rightCommand
+    case (.print(let leftAction), .print(let rightAction)):
+      return leftAction == rightAction
+    default:
+      return false
   }
 }
+

@@ -13,6 +13,8 @@
 
 @interface FBiOSTargetDouble : NSObject <FBiOSTarget>
 
+@property (nonatomic, strong, readonly) FBiOSActionRouter *router;
+
 @property (nonatomic, copy, readwrite) NSString *udid;
 
 @property (nonatomic, copy, readwrite) NSString *name;
@@ -29,8 +31,8 @@
 
 @property (nonatomic, copy, readwrite) FBProcessInfo *launchdProcess;
 
-@property (nonatomic, copy, readwrite) id<FBControlCoreConfiguration_Device> deviceConfiguration;
+@property (nonatomic, copy, readwrite) FBDeviceType *deviceType;
 
-@property (nonatomic, copy, readwrite) id<FBControlCoreConfiguration_OS> osConfiguration;
+@property (nonatomic, copy, readwrite) FBOSVersion *osVersion;
 
 @end

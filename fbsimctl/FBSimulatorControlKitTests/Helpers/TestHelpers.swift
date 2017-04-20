@@ -45,7 +45,7 @@ public extension XCTestCase {
     let writer = TestWriter()
     let cli = CLI.fromArguments(arguments, environment: [:])
     let reporter = cli.createReporter(writer)
-    let runner = CLIRunner(cli: cli, reporter: reporter)
+    let runner = CLIRunner(cli: cli, writer: writer, reporter: reporter)
     let result = runner.runForStatus()
     XCTAssertEqual(result, 0, "Expected a succesful result, but got \(result), output \(writer)")
     return writer.output
@@ -66,4 +66,18 @@ class TestWriter : Writer, CustomStringConvertible {
   var description: String { get {
     return output.joined(separator: "\n")
   }}
+}
+
+extension FBiOSTargetQuery {
+  public static func simulatorStates(_ states: [FBSimulatorState]) -> FBiOSTargetQuery {
+    return self.allTargets().simulatorStates(states)
+  }
+
+  public func simulatorStates(_ states: [FBSimulatorState]) -> FBiOSTargetQuery {
+    let indexSet = states.reduce(NSMutableIndexSet()) { (indexSet, state) in
+      indexSet.add(Int(state.rawValue))
+      return indexSet
+    }
+    return self.states(indexSet as IndexSet)
+  }
 }

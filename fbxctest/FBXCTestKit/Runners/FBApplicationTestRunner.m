@@ -54,7 +54,7 @@ static const NSTimeInterval ApplicationTestDefaultTimeout = 4000;
     return NO;
   }
 
-  if (![self.simulator installApplication:testRunnerApp error:error]) {
+  if (![self.simulator installApplicationWithPath:testRunnerApp.path error:error]) {
     [self.configuration.logger logFormat:@"Failed to install test runner application: %@", *error];
     return NO;
   }
@@ -63,6 +63,7 @@ static const NSTimeInterval ApplicationTestDefaultTimeout = 4000;
     configurationWithApplication:testRunnerApp
     arguments:@[]
     environment:self.configuration.processUnderTestEnvironment
+    waitForDebugger:NO
     output:FBProcessOutputConfiguration.outputToDevNull];
 
   FBTestLaunchConfiguration *testLaunchConfiguration = [[FBTestLaunchConfiguration
@@ -76,13 +77,14 @@ static const NSTimeInterval ApplicationTestDefaultTimeout = 4000;
     reporter:[FBXCTestReporterAdapter adapterWithReporter:self.configuration.reporter]];
 
   NSError *innerError = nil;
-  if (![runner connectAndStartWithError:&innerError]) {
+  FBTestManager *manager = [runner connectAndStartWithError:&innerError];
+  if (!manager) {
     return [[[FBXCTestError
       describe:@"Failed to connect to the Simulator's Test Manager"]
       causedBy:innerError]
       failBool:error];
   }
-  FBTestManagerResult *result = [runner waitUntilAllTestRunnersHaveFinishedTestingWithTimeout:ApplicationTestDefaultTimeout];
+  FBTestManagerResult *result = [manager waitUntilTestingHasFinishedWithTimeout:ApplicationTestDefaultTimeout];
   if (result.crashDiagnostic) {
     return [[FBXCTestError
       describeFormat:@"The Application Crashed during the Test Run\n%@", result.crashDiagnostic.asString]

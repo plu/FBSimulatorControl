@@ -8,6 +8,7 @@
  */
 
 import Foundation
+import FBControlCore
 
 /**
  A Protocol for defining
@@ -47,11 +48,13 @@ class CompositeRelay : Relay {
 class SynchronousRelay : Relay {
   let relay: Relay
   let reporter: EventReporter
+  let awaitable: FBTerminationAwaitable?
   let started: (Void) -> Void
 
-  init(relay: Relay, reporter: EventReporter, started: @escaping (Void) -> Void) {
+  init(relay: Relay, reporter: EventReporter, awaitable: FBTerminationAwaitable?, started: @escaping (Void) -> Void) {
     self.relay = relay
     self.reporter = reporter
+    self.awaitable = awaitable
     self.started = started
   }
 
@@ -59,7 +62,7 @@ class SynchronousRelay : Relay {
     // Setup the Signal Handling first, so sending a Signal cannot race with starting the relay.
     var signalled = false
     let handler = SignalHandler { info in
-      self.reporter.reportSimple(EventName.Signalled, EventType.Discrete, info)
+      self.reporter.reportSimple(.signalled, .discrete, info)
       signalled = true
     }
     handler.register()
@@ -69,7 +72,15 @@ class SynchronousRelay : Relay {
     self.started()
 
     // Start the event loop.
-    RunLoop.current.spinRunLoop(withTimeout: Double.greatestFiniteMagnitude, untilTrue: { signalled })
+    let awaitable = self.awaitable
+    RunLoop.current.spinRunLoop(withTimeout: Double.greatestFiniteMagnitude, untilTrue: {
+      // Check the awaitable (if present)
+      if awaitable?.hasTerminated == true {
+        return true
+      }
+      // Or return the current signal status.
+      return signalled
+    })
     handler.unregister()
   }
 
@@ -79,33 +90,14 @@ class SynchronousRelay : Relay {
 }
 
 /**
- A Relay that accepts input from stdin, writing it to the Line Buffer.
+ Bridges an Action Reader to a Relay
  */
-class FileHandleRelay : Relay {
-  let commandBuffer: CommandBuffer
-  let input: FileHandle
-
-  init(commandBuffer: CommandBuffer, input: FileHandle) {
-    self.commandBuffer = commandBuffer
-    self.input = input
-  }
-
-  convenience init(commandBuffer: CommandBuffer) {
-    self.init(
-      commandBuffer: commandBuffer,
-      input: FileHandle.standardInput
-    )
-  }
-
+extension FBiOSActionReader : Relay {
   func start() throws {
-    let commandBuffer = self.commandBuffer
-    self.input.readabilityHandler = { handle in
-      let data = handle.availableData
-      let _ = commandBuffer.append(data)
-    }
+    try self.startListening()
   }
 
-  func stop() {
-    self.input.readabilityHandler = nil
+  func stop() throws {
+    try self.stopListening()
   }
 }

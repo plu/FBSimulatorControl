@@ -39,11 +39,14 @@
 
 #pragma mark Tests
 
-- (FBSimulator *)assertObtainsBootedSimulatorWithTableSearch
+- (nullable FBSimulator *)assertObtainsBootedSimulatorWithTableSearch
 {
   FBSimulator *simulator = [self assertObtainsBootedSimulator];
+  if (!simulator) {
+    return nil;
+  }
   NSError *error = nil;
-  BOOL success = [simulator installApplication:self.tableSearchApplication error:&error];
+  BOOL success = [simulator installApplicationWithPath:self.tableSearchApplication.path error:&error];
   XCTAssertNil(error);
   XCTAssertTrue(success);
   return simulator;
@@ -68,8 +71,11 @@
     NSLog(@"Skipping running -[%@ %@] since Xcode 7 or smaller is required", NSStringFromClass(self.class), NSStringFromSelector(_cmd));
     return;
   }
-  self.simulatorConfiguration = FBSimulatorConfiguration.iPhone5.iOS_8_1;
+  self.simulatorConfiguration = [[FBSimulatorConfiguration withDeviceModel:FBDeviceModeliPhone5] withOSNamed:FBOSVersionNameiOS_8_1];
   FBSimulator *simulator = [self assertObtainsBootedSimulatorWithTableSearch];
+  if (!simulator) {
+    return;
+  }
   NSError *error = nil;
   BOOL success = [simulator startTestWithLaunchConfiguration:self.testLaunch reporter:self error:&error]
               && [simulator waitUntilAllTestRunnersHaveFinishedTestingWithTimeout:20 error:&error];

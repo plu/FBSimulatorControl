@@ -20,7 +20,7 @@
 
 #pragma mark Initializers
 
-- (instancetype)initWithMapping:(NSDictionary<NSString *, NSArray<NSString *> *> *)mapping
+- (instancetype)initWithMapping:(NSDictionary<FBDiagnosticName, NSArray<NSString *> *> *)mapping
 {
   self = [super init];
   if (!self) {
@@ -120,15 +120,19 @@
 @interface FBBatchLogSearch ()
 
 @property (nonatomic, copy, readonly) NSDictionary *mapping;
-@property (nonatomic, assign, readonly) BOOL lines;
+@property (nonatomic, assign, readonly) FBBatchLogSearchOptions options;
 
 @end
 
 @implementation FBBatchLogSearch
 
+static NSString *const KeyLines = @"lines";
+static NSString *const KeyFirst = @"first";
+static NSString *const KeyMapping = @"mapping";
+
 #pragma mark Initializers
 
-+ (instancetype)withMapping:(NSDictionary<NSArray<NSString *> *, NSArray<FBLogSearchPredicate *> *> *)mapping lines:(BOOL)lines error:(NSError **)error
++ (instancetype)withMapping:(NSDictionary<NSArray<FBDiagnosticName> *, NSArray<FBLogSearchPredicate *> *> *)mapping options:(FBBatchLogSearchOptions)options error:(NSError **)error
 {
   if (![FBCollectionInformation isDictionaryHeterogeneous:mapping keyClass:NSString.class valueClass:NSArray.class]) {
     return [[FBControlCoreError describeFormat:@"%@ is not an dictionary<string, string>", mapping] fail:error];
@@ -139,7 +143,7 @@
       return [[FBControlCoreError describeFormat:@"%@ value is not an array of log search predicates", value] fail:error];
     }
   }
-  return [[FBBatchLogSearch alloc] initWithMapping:mapping lines:lines];
+  return [[FBBatchLogSearch alloc] initWithMapping:mapping options:options];
 }
 
 + (instancetype)inflateFromJSON:(NSDictionary *)json error:(NSError **)error
@@ -147,14 +151,31 @@
   if (![json isKindOfClass:NSDictionary.class]) {
     return [[FBControlCoreError describeFormat:@"%@ is not a dictionary", json] fail:error];
   }
-  NSNumber *lines = json[@"lines"];
+  NSNumber *lines = json[KeyLines] ?: @NO;
   if (![lines isKindOfClass:NSNumber.class]) {
-    return [[FBControlCoreError describeFormat:@"%@ is not a number for 'lines'", lines] fail:error];
+    return [[FBControlCoreError
+      describeFormat:@"%@ is not a number for '%@'", lines, KeyLines]
+      fail:error];
+  }
+  NSNumber *first = json[KeyFirst] ?: @NO;
+  if (![lines isKindOfClass:NSNumber.class]) {
+    return [[FBControlCoreError
+    describeFormat:@"%@ is not a number for '%@'", lines, KeyFirst]
+    fail:error];
+  }
+  FBBatchLogSearchOptions options = 0;
+  if (lines.boolValue) {
+    options = options | FBBatchLogSearchOptionsFullLines;
+  }
+  if (first.boolValue) {
+    options = options | FBBatchLogSearchOptionsFirstMatch;
   }
 
-  NSDictionary<NSString *, NSArray *> *jsonMapping = json[@"mapping"];
+  NSDictionary<NSString *, NSArray *> *jsonMapping = json[KeyMapping];
   if (![FBCollectionInformation isDictionaryHeterogeneous:jsonMapping keyClass:NSString.class valueClass:NSArray.class]) {
-    return [[FBControlCoreError describeFormat:@"%@ is not a dictionary of <string, array> for 'mapping'", jsonMapping] fail:error];
+    return [[FBControlCoreError
+      describeFormat:@"%@ is not a dictionary of <string, array> for '%@'", jsonMapping, KeyMapping]
+      fail:error];
   }
 
   NSMutableDictionary *predicateMapping = [NSMutableDictionary dictionary];
@@ -170,10 +191,10 @@
 
     predicateMapping[key] = [predicates copy];
   }
-  return [self withMapping:[predicateMapping copy] lines:lines.boolValue error:error];
+  return [self withMapping:[predicateMapping copy] options:options error:error];
 }
 
-- (instancetype)initWithMapping:(NSDictionary *)mapping lines:(BOOL)lines
+- (instancetype)initWithMapping:(NSDictionary *)mapping options:(FBBatchLogSearchOptions)options
 {
   self = [super init];
   if (!self) {
@@ -181,7 +202,7 @@
   }
 
   _mapping = mapping;
-  _lines = lines;
+  _options = options;
 
   return self;
 }
@@ -195,23 +216,23 @@
     return nil;
   }
 
-  _mapping = [coder decodeObjectForKey:NSStringFromSelector(@selector(mapping))];
-  _lines = [coder decodeBoolForKey:NSStringFromSelector(@selector(lines))];
+  _mapping = [coder decodeObjectForKey:KeyMapping];
+  _options = (NSUInteger) [coder decodeIntegerForKey:NSStringFromSelector(@selector(options))];
 
   return self;
 }
 
 - (void)encodeWithCoder:(NSCoder *)coder
 {
-  [coder encodeObject:self.mapping forKey:NSStringFromSelector(@selector(mapping))];
-  [coder encodeBool:self.lines forKey:NSStringFromSelector(@selector(lines))];
+  [coder encodeObject:self.mapping forKey:KeyMapping];
+  [coder encodeInteger:(NSInteger)self.options forKey:NSStringFromSelector(@selector(options))];
 }
 
 #pragma mark NSCopying
 
 - (instancetype)copyWithZone:(NSZone *)zone
 {
-  return [[FBBatchLogSearch alloc] initWithMapping:self.mapping lines:self.lines];
+  return self;
 }
 
 #pragma mark FBJSONSerializationDescribeable Implementation
@@ -222,9 +243,12 @@
   for (NSArray *key in self.mapping) {
     mappingDictionary[key] = [self.mapping[key] valueForKey:@"jsonSerializableRepresentation"];
   }
+  BOOL lines = self.options & FBBatchLogSearchOptionsFullLines;
+  BOOL first = self.options & FBBatchLogSearchOptionsFirstMatch;
   return @{
-    @"lines" : @(self.lines),
-    @"mapping" : [mappingDictionary copy],
+    KeyLines: @(lines),
+    KeyFirst: @(first),
+    KeyMapping: [mappingDictionary copy],
   };
 }
 
@@ -256,12 +280,12 @@
     return NO;
   }
 
-  return self.lines == object.lines && [self.mapping isEqualToDictionary:object.mapping];
+  return self.options == object.options && [self.mapping isEqualToDictionary:object.mapping];
 }
 
 - (NSUInteger)hash
 {
-  return (NSUInteger) self.lines ^ self.mapping.hash;
+  return (NSUInteger) self.options ^ self.mapping.hash;
 }
 
 #pragma mark Public API
@@ -270,7 +294,7 @@
 {
   NSParameterAssert([FBCollectionInformation isArrayHeterogeneous:diagnostics withClass:FBDiagnostic.class]);
 
-  // Construct an NSDictionary<NSString, FBDiagnostic> of diagnostics.
+  // Construct an NSDictionary<FBDiagnosticName, FBDiagnostic> of diagnostics.
   NSDictionary *namesToDiagnostics = [NSDictionary dictionaryWithObjects:diagnostics forKeys:[diagnostics valueForKey:@"shortName"]];
 
   // Construct and NSArray<FBLogSearch> instances
@@ -295,11 +319,11 @@
   }
 
   // Perform the search, concurrently
-  BOOL lines = self.lines;
+  FBBatchLogSearchOptions options = self.options;
   NSArray<NSArray *> *results = [FBConcurrentCollectionOperations
     mapFilter:[searchers copy]
     map:^ NSArray * (FBDiagnosticLogSearch *search) {
-      NSArray<NSString *> *matches = lines ? search.matchingLines : search.allMatches;
+      NSArray<NSString *> *matches = [FBBatchLogSearch search:search withOptions:options];
       if (matches.count == 0) {
        return nil;
       }
@@ -326,9 +350,21 @@
   return result;
 }
 
-+ (NSDictionary *)searchDiagnostics:(NSArray<FBDiagnostic *> *)diagnostics withPredicate:(FBLogSearchPredicate *)predicate lines:(BOOL)lines
++ (NSDictionary *)searchDiagnostics:(NSArray<FBDiagnostic *> *)diagnostics withPredicate:(FBLogSearchPredicate *)predicate options:(FBBatchLogSearchOptions)options
 {
-  return [[[self withMapping:@{@[] : @[predicate]} lines:lines error:nil] search:diagnostics] mapping];
+  return [[[self withMapping:@{@[] : @[predicate]} options:options error:nil] search:diagnostics] mapping];
+}
+
++ (NSArray<NSString *> *)search:(FBDiagnosticLogSearch *)search withOptions:(FBBatchLogSearchOptions)options
+{
+  BOOL lines = options & FBBatchLogSearchOptionsFullLines;
+  BOOL first = options & FBBatchLogSearchOptionsFirstMatch;
+  if (first) {
+    NSString *line = lines ? search.firstMatchingLine : search.firstMatch;
+    return line ? @[line] : @[];
+  } else {
+    return lines ? search.matchingLines : search.allMatches;
+  }
 }
 
 @end

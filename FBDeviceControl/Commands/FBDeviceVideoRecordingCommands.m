@@ -15,6 +15,7 @@
 #import "FBDevice.h"
 #import "FBDevice+Private.h"
 #import "FBDeviceControlError.h"
+#import "FBDeviceBitmapStream.h"
 
 @interface FBDeviceVideoRecordingCommands ()
 
@@ -24,6 +25,8 @@
 @end
 
 @implementation FBDeviceVideoRecordingCommands
+
+#pragma mark Initializers
 
 + (instancetype)commandsWithDevice:(FBDevice *)device
 {
@@ -41,19 +44,27 @@
   return self;
 }
 
-- (BOOL)startRecordingWithError:(NSError **)error
+#pragma mark FBVideoRecordingCommands
+
+- (nullable id<FBVideoRecordingSession>)startRecordingToFile:(NSString *)filePath error:(NSError **)error
 {
   NSError *innerError = nil;
-  if (!self.video) {
-    FBDiagnosticBuilder *logBuilder = [FBDiagnosticBuilder builderWithDiagnostic:self.device.diagnostics.video];
-    NSString *filePath = logBuilder.createPath;
-    FBDeviceVideo *video = [FBDeviceVideo videoForDevice:self.device filePath:filePath error:&innerError];
-    if (!video) {
-      return [FBDeviceControlError failBoolWithError:innerError errorOut:error];
-    }
-    self.video = video;
+  if (self.video) {
+    return [[FBDeviceControlError
+      describe:@"Cannot create a new video recording session, one is already active"]
+      fail:error];
   }
-  return [self.video startRecordingWithError:error];
+
+  FBDiagnosticBuilder *logBuilder = [FBDiagnosticBuilder builderWithDiagnostic:self.device.diagnostics.video];
+  filePath = filePath ?: logBuilder.createPath;
+  self.video = [FBDeviceVideo videoForDevice:self.device filePath:filePath error:&innerError];
+  if (!self.video) {
+    return [FBDeviceControlError failWithError:innerError errorOut:error];
+  }
+  if (![self.video startRecordingWithError:error]) {
+    return nil;
+  }
+  return self.video;
 }
 
 - (BOOL)stopRecordingWithError:(NSError **)error
@@ -65,5 +76,17 @@
   }
   return [self.video stopRecordingWithError:error];
 }
+
+#pragma mark FBBitmapStreamingCommands
+
+- (nullable id<FBBitmapStream>)createStreamWithError:(NSError **)error
+{
+  AVCaptureSession *session = [FBDeviceVideo captureSessionForDevice:self.device error:error];
+  if (!session) {
+    return nil;
+  }
+  return [FBDeviceBitmapStream streamWithSession:session logger:self.device.logger error:error];
+}
+
 
 @end

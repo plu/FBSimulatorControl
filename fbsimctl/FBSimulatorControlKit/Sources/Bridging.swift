@@ -42,7 +42,6 @@ extension URL {
   var bridgedAbsoluteString: String { get {
     return self.absoluteString
   }}
-
 }
 
 public typealias ControlCoreValue = FBJSONSerializable & CustomStringConvertible
@@ -67,18 +66,6 @@ extension FBiOSTargetType : Accumulator {
 }
 
 extension FBiOSTargetQuery {
-  public static func simulatorStates(_ states: [FBSimulatorState]) -> FBiOSTargetQuery {
-    return self.allTargets().simulatorStates(states)
-  }
-
-  public func simulatorStates(_ states: [FBSimulatorState]) -> FBiOSTargetQuery {
-    let indexSet = states.reduce(NSMutableIndexSet()) { (indexSet, state) in
-      indexSet.add(Int(state.rawValue))
-      return indexSet
-    }
-    return self.states(indexSet as IndexSet)
-  }
-
   public static func ofCount(_ count: Int) -> FBiOSTargetQuery {
     return self.allTargets().ofCount(count)
   }
@@ -90,19 +77,16 @@ extension FBiOSTargetQuery {
 
 extension FBiOSTargetQuery : Accumulator {
   public func append(_ other: FBiOSTargetQuery) -> Self {
-    let deviceSet = other.devices as NSSet
-    let deviceArray = Array(deviceSet) as! [FBControlCoreConfiguration_Device]
-    let osVersionsSet = other.osVersions as NSSet
-    let osVersionsArray = Array(osVersionsSet) as! [FBControlCoreConfiguration_OS]
     let targetType = self.targetType.append(other.targetType)
 
     return self
       .udids(Array(other.udids))
+      .names(Array(other.names))
       .states(other.states)
       .architectures(Array(other.architectures))
       .targetType(targetType)
-      .devices(deviceArray)
-      .osVersions(osVersionsArray)
+      .osVersions(Array(other.osVersions))
+      .devices(Array(other.devices))
       .range(other.range)
   }
 }
@@ -112,7 +96,7 @@ extension FBiOSTargetFormatKey {
     return [
       FBiOSTargetFormatKey.UDID,
       FBiOSTargetFormatKey.name,
-      FBiOSTargetFormatKey.deviceName,
+      FBiOSTargetFormatKey.model,
       FBiOSTargetFormatKey.osVersion,
       FBiOSTargetFormatKey.state,
       FBiOSTargetFormatKey.architecture,
@@ -173,11 +157,11 @@ extension FBProcessOutputConfiguration : Accumulator {
 extension IndividualCreationConfiguration {
   public var simulatorConfiguration : FBSimulatorConfiguration { get {
     var configuration = FBSimulatorConfiguration.default()
-    if let device = self.deviceType {
-      configuration = configuration.withDevice(device)
+    if let model = self.model {
+      configuration = configuration.withDeviceModel(model)
     }
-    if let os = self.osVersion {
-      configuration = configuration.withOS(os)
+    if let os = self.os {
+      configuration = configuration.withOSNamed(os)
     }
     if let auxDirectory = self.auxDirectory {
       configuration = configuration.withAuxillaryDirectory(auxDirectory)
@@ -221,8 +205,112 @@ struct LineBufferDataIterator : IteratorProtocol {
   }
 }
 
+struct LineBufferStringIterator : IteratorProtocol {
+  let lineBuffer: FBLineBuffer
+
+  mutating func next() -> String? {
+    return self.lineBuffer.consumeLineString()
+  }
+}
+
 extension FBLineBuffer {
   func dataIterator() -> LineBufferDataIterator {
     return LineBufferDataIterator(lineBuffer: self)
+  }
+
+  func stringIterator() -> LineBufferStringIterator {
+    return LineBufferStringIterator(lineBuffer: self)
+  }
+}
+
+@objc class AccumilatingActionDelegate : NSObject, FBiOSTargetActionDelegate {
+  var handle: FBTerminationHandle? = nil
+  let reporter: EventReporter
+
+  init(reporter: EventReporter) {
+    self.reporter = reporter
+    super.init()
+  }
+
+  func action(_ action: FBiOSTargetAction, target: FBiOSTarget, didGenerate terminationHandle: FBTerminationHandle) {
+    self.handle = terminationHandle
+  }
+}
+
+@objc class ActionReaderDelegateBridge : NSObject, FBiOSActionReaderDelegate {
+  let interpreter: EventInterpreter
+
+  init(interpreter: EventInterpreter) {
+    self.interpreter = interpreter
+    super.init()
+  }
+
+  func interpret(_ action: FBiOSTargetAction, _ eventType: EventType) -> String {
+    let subject = SimpleSubject(action.eventName, .started, ControlCoreSubject(action as! ControlCoreValue))
+    return self.interpret(subject)
+  }
+
+  func interpret(_ subject: EventReporterSubject) -> String {
+    let lines = self.interpreter.interpret(subject)
+    return lines.joined(separator: "\n") + "\n"
+  }
+
+  func readerDidFinishReading(_ reader: FBiOSActionReader) {
+
+  }
+
+  func reader(_ reader: FBiOSActionReader, failedToInterpretInput input: String, error: Error) -> String? {
+    return error.localizedDescription + "\n"
+  }
+
+  func reader(_ reader: FBiOSActionReader, willStartPerforming action: FBiOSTargetAction, on target: FBiOSTarget) -> String? {
+    return self.interpret(action, .started)
+  }
+
+  func reader(_ reader: FBiOSActionReader, didProcessAction action: FBiOSTargetAction, on target: FBiOSTarget) -> String? {
+    return self.interpret(action, .ended)
+  }
+
+  func reader(_ reader: FBiOSActionReader, didFailToProcessAction action: FBiOSTargetAction, on target: FBiOSTarget, error: Error) -> String? {
+    let subject = SimpleSubject(.failure, .discrete, error.localizedDescription)
+    return self.interpret(subject)
+  }
+}
+
+extension FBiOSTargetAction {
+  func runAction(target: FBiOSTarget, reporter: EventReporter) throws -> FBTerminationHandle? {
+    let delegate = AccumilatingActionDelegate(reporter: reporter)
+    try self.run(with: target, delegate: delegate)
+    return delegate.handle
+  }
+
+  public var eventName: EventName { get {
+    let actionType = type(of: self).actionType
+    switch actionType {
+    case FBiOSTargetActionType.applicationLaunch:
+      return .launch
+    case FBiOSTargetActionType.agentLaunch:
+      return .launch
+    case FBiOSTargetActionType.testLaunch:
+      return .launchXCTest
+    default:
+      return actionType
+    }
+  }}
+
+  public func printable() -> String {
+    let json = try! JSON.encode(FBiOSActionRouter.json(from: self) as AnyObject)
+    return try! json.serializeToString(false)
+  }
+}
+
+extension FBProcessLaunchConfiguration : EnvironmentAdditive {}
+
+extension FBTestLaunchConfiguration : EnvironmentAdditive {
+  func withEnvironmentAdditions(_ environmentAdditions: [String : String]) -> Self {
+    guard let appLaunchConf = self.applicationLaunchConfiguration else {
+      return self
+    }
+    return self.withApplicationLaunchConfiguration(appLaunchConf.withEnvironmentAdditions(environmentAdditions))
   }
 }

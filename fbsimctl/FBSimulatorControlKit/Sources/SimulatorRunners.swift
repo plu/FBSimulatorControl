@@ -10,16 +10,27 @@
 import Foundation
 import FBSimulatorControl
 
+extension FileOutput {
+  func makeWriter() throws -> FBFileWriter {
+    switch self {
+    case .path(let path):
+      return try FBFileWriter(forFilePath: path, blocking: true)
+    case .standardOut:
+      return FBFileWriter(fileHandle: FileHandle.standardOutput, blocking: true)
+    }
+  }
+}
+
 struct SimulatorCreationRunner : Runner {
   let context: iOSRunnerContext<CreationSpecification>
 
   func run() -> CommandResult {
     do {
       for configuration in self.configurations {
-        self.context.reporter.reportSimpleBridge(EventName.Create, EventType.Started, configuration)
+        self.context.reporter.reportSimpleBridge(.create, .started, configuration)
         let simulator = try self.context.simulatorControl.set.createSimulator(with: configuration)
         self.context.defaults.updateLastQuery(FBiOSTargetQuery.udids([simulator.udid]))
-        self.context.reporter.reportSimpleBridge(EventName.Create, EventType.Ended, simulator)
+        self.context.reporter.reportSimpleBridge(.create, .ended, simulator)
       }
       return .success(nil)
     } catch let error as NSError {
@@ -59,51 +70,38 @@ struct SimulatorActionRunner : Runner {
 
     switch action {
     case .approve(let bundleIDs):
-      return iOSTargetRunner(reporter, EventName.Approve, StringsSubject(bundleIDs)) {
+      return iOSTargetRunner.simple(reporter, .approve, StringsSubject(bundleIDs)) {
         try simulator.authorizeLocationSettings(bundleIDs)
       }
-    case .boot(let maybeBootConfiguration):
-      let bootConfiguration = maybeBootConfiguration ?? FBSimulatorBootConfiguration.default()
-      return iOSTargetRunner(reporter, EventName.Boot, ControlCoreSubject(bootConfiguration)) {
-        try simulator.bootSimulator(bootConfiguration)
-      }
     case .clearKeychain(let maybeBundleID):
-      return iOSTargetRunner(reporter, EventName.ClearKeychain, ControlCoreSubject(simulator)) {
+      return iOSTargetRunner.simple(reporter, .clearKeychain, ControlCoreSubject(simulator)) {
         if let bundleID = maybeBundleID {
           try simulator.killApplication(withBundleID: bundleID)
         }
         try simulator.clearKeychain()
       }
     case .delete:
-      return iOSTargetRunner(reporter, EventName.Delete, ControlCoreSubject(simulator)) {
+      return iOSTargetRunner.simple(reporter, .delete, ControlCoreSubject(simulator)) {
         try simulator.set!.delete(simulator)
       }
     case .erase:
-      return iOSTargetRunner(reporter, EventName.Erase, ControlCoreSubject(simulator)) {
+      return iOSTargetRunner.simple(reporter, .erase, ControlCoreSubject(simulator)) {
         try simulator.erase()
       }
-    case .hid(let event):
-      return iOSTargetRunner(reporter, EventName.Hid, ControlCoreSubject(simulator)) {
-        try event.perform(on: simulator.connect().connectToHID())
+    case .focus:
+      return iOSTargetRunner.simple(reporter, .focus, ControlCoreSubject(simulator)) {
+        try simulator.focus()
       }
     case .keyboardOverride:
-      return iOSTargetRunner(reporter, EventName.KeyboardOverride, ControlCoreSubject(simulator)) {
+      return iOSTargetRunner.simple(reporter, .keyboardOverride, ControlCoreSubject(simulator)) {
         try simulator.setupKeyboard()
       }
-    case .launchAgent(let launch):
-      return iOSTargetRunner(reporter, EventName.Launch, ControlCoreSubject(launch)) {
-        try simulator.launchAgent(launch)
-      }
-    case .launchApp(let launch):
-      return iOSTargetRunner(reporter, EventName.Launch, ControlCoreSubject(launch)) {
-        try simulator.launchApplication(launch)
-      }
     case .open(let url):
-      return iOSTargetRunner(reporter, EventName.Open, url.bridgedAbsoluteString) {
+      return iOSTargetRunner.simple(reporter, .open, url.bridgedAbsoluteString) {
         try simulator.open(url)
       }
     case .relaunch(let appLaunch):
-      return iOSTargetRunner(reporter, EventName.Relaunch, ControlCoreSubject(appLaunch)) {
+      return iOSTargetRunner.simple(reporter, .relaunch, ControlCoreSubject(appLaunch)) {
         try simulator.launchOrRelaunchApplication(appLaunch)
       }
     case .search(let search):
@@ -111,22 +109,22 @@ struct SimulatorActionRunner : Runner {
     case .serviceInfo(let identifier):
       return ServiceInfoRunner(reporter: reporter, identifier: identifier)
     case .shutdown:
-      return iOSTargetRunner(reporter, EventName.Shutdown, ControlCoreSubject(simulator)) {
+      return iOSTargetRunner.simple(reporter, .shutdown, ControlCoreSubject(simulator)) {
         try simulator.set!.kill(simulator)
       }
     case .tap(let x, let y):
-      return iOSTargetRunner(reporter, EventName.Tap, ControlCoreSubject(simulator)) {
+      return iOSTargetRunner.simple(reporter, .tap, ControlCoreSubject(simulator)) {
         let event = FBSimulatorHIDEvent.tapAt(x: x, y: y)
         try event.perform(on: simulator.connect().connectToHID())
       }
     case .setLocation(let latitude, let longitude):
-      return iOSTargetRunner(reporter, EventName.SetLocation, ControlCoreSubject(simulator)) {
+      return iOSTargetRunner.simple(reporter, .setLocation, ControlCoreSubject(simulator)) {
         try simulator.setLocation(latitude, longitude: longitude)
       }
     case .upload(let diagnostics):
       return UploadRunner(reporter, diagnostics)
     case .watchdogOverride(let bundleIDs, let timeout):
-      return iOSTargetRunner(reporter, EventName.WatchdogOverride, StringsSubject(bundleIDs)) {
+      return iOSTargetRunner.simple(reporter, .watchdogOverride, StringsSubject(bundleIDs)) {
         try simulator.overrideWatchDogTimer(forApplications: bundleIDs, withTimeout: timeout)
       }
     default:
@@ -148,7 +146,7 @@ private struct SearchRunner : Runner {
     let simulator = self.reporter.simulator
     let diagnostics = simulator.diagnostics.allDiagnostics()
     let results = search.search(diagnostics)
-    self.reporter.report(EventName.Search, EventType.Discrete, ControlCoreSubject(results))
+    self.reporter.report(.search, .discrete, ControlCoreSubject(results))
     return .success(nil)
   }
 }
@@ -165,7 +163,7 @@ private struct ServiceInfoRunner : Runner {
     guard let processInfo = self.reporter.simulator.processFetcher.processFetcher.processInfo(for: pid) else {
       return .failure("Could not get process info for pid \(pid)")
     }
-    return .success(SimpleSubject(EventName.ServiceInfo, EventType.Discrete, ControlCoreSubject(processInfo)))
+    return .success(SimpleSubject(.serviceInfo, .discrete, ControlCoreSubject(processInfo)))
   }
 }
 
@@ -194,11 +192,11 @@ private struct UploadRunner : Runner {
 
     if media.count > 0 {
       let paths = media.map { $0.1 }
-      let runner = iOSTargetRunner(reporter, EventName.Upload, StringsSubject(paths)) {
+      let runner = iOSTargetRunner.simple(reporter, .upload, StringsSubject(paths)) {
         try FBUploadMediaStrategy(simulator: self.reporter.simulator).uploadMedia(paths)
       }
       let result = runner.run()
-      switch result {
+      switch result.outcome {
       case .failure: return result
       default: break
       }
@@ -212,7 +210,7 @@ private struct UploadRunner : Runner {
         return CommandResult.failure("Could not write out diagnostic \(sourcePath) to path")
       }
       let destinationDiagnostic = FBDiagnosticBuilder().updatePath(destinationPath).build()
-      self.reporter.report(EventName.Upload, EventType.Discrete, ControlCoreSubject(destinationDiagnostic))
+      self.reporter.report(.upload, .discrete, ControlCoreSubject(destinationDiagnostic))
     }
 
     return .success(nil)

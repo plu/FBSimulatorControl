@@ -15,14 +15,20 @@ import FBSimulatorControl
 class FBiOSTargetFormatParserTests : XCTestCase {
   func testParsesKeywords() {
     self.assertParsesAll(FBiOSTargetFormatParsers.parser, [
-      (["--udid"], FBiOSTargetFormat(fields: [.UDID])),
-      (["--name"], FBiOSTargetFormat(fields: [.name])),
-      (["--device-name"], FBiOSTargetFormat(fields: [.deviceName])),
-      (["--os"], FBiOSTargetFormat(fields: [.osVersion])),
-      (["--state"], FBiOSTargetFormat(fields: [.state])),
-      (["--arch"], FBiOSTargetFormat(fields: [.architecture])),
-      (["--pid"], FBiOSTargetFormat(fields: [.processIdentifier])),
-      (["--container_pid"], FBiOSTargetFormat(fields: [.containerApplicationProcessIdentifier]))
+      (["--format", "%u"], FBiOSTargetFormat(fields: [.UDID])),
+      (["--format=%u"], FBiOSTargetFormat(fields: [.UDID])),
+      (["--format", "%n"], FBiOSTargetFormat(fields: [.name])),
+      (["--format=%n"], FBiOSTargetFormat(fields: [.name])),
+      (["--format", "%m"], FBiOSTargetFormat(fields: [.model])),
+      (["--format=%m"], FBiOSTargetFormat(fields: [.model])),
+      (["--format", "%o"], FBiOSTargetFormat(fields: [.osVersion])),
+      (["--format=%o"], FBiOSTargetFormat(fields: [.osVersion])),
+      (["--format", "%s"], FBiOSTargetFormat(fields: [.state])),
+      (["--format=%s"], FBiOSTargetFormat(fields: [.state])),
+      (["--format", "%a"], FBiOSTargetFormat(fields: [.architecture])),
+      (["--format=%a"], FBiOSTargetFormat(fields: [.architecture])),
+      (["--format", "%p"], FBiOSTargetFormat(fields: [.processIdentifier])),
+      (["--format=%p"], FBiOSTargetFormat(fields: [.processIdentifier])),
     ])
   }
 }
@@ -126,37 +132,46 @@ let validConfigurations: [([String], Configuration)] = [
   (["--debug-logging"], Configuration(outputOptions: OutputOptions.DebugLogging, managementOptions: FBSimulatorManagementOptions(), deviceSetPath: nil)),
   (["--kill-all", "--kill-spurious"], Configuration(outputOptions: OutputOptions(), managementOptions: FBSimulatorManagementOptions.killAllOnFirstStart.union(.killSpuriousSimulatorsOnFirstStart), deviceSetPath: nil)),
   (["--set", "/usr/bin"], Configuration(outputOptions: OutputOptions(), managementOptions: FBSimulatorManagementOptions(), deviceSetPath: "/usr/bin")),
+  (["--set=/usr/bin"], Configuration(outputOptions: OutputOptions(), managementOptions: FBSimulatorManagementOptions(), deviceSetPath: "/usr/bin")),
   (["--debug-logging", "--set", "/usr/bin", "--delete-all", "--kill-spurious"], Configuration(outputOptions: OutputOptions.DebugLogging, managementOptions: FBSimulatorManagementOptions.deleteAllOnFirstStart.union(.killSpuriousSimulatorsOnFirstStart), deviceSetPath: "/usr/bin")),
   (["--delete-all", "--set", "/usr/bin", "--debug-logging", "--kill-spurious"], Configuration(outputOptions: OutputOptions.DebugLogging, managementOptions: FBSimulatorManagementOptions.deleteAllOnFirstStart.union(.killSpuriousSimulatorsOnFirstStart), deviceSetPath: "/usr/bin")),
   (["--set", "/usr/bin", "--delete-all", "--kill-spurious"], Configuration(outputOptions: OutputOptions(), managementOptions: FBSimulatorManagementOptions.deleteAllOnFirstStart.union(.killSpuriousSimulatorsOnFirstStart), deviceSetPath: "/usr/bin"))
 ]
 
 let validQueries: [([String], FBiOSTargetQuery)] = [
-  (["all"], FBiOSTargetQuery.allTargets()),
-  (["iPhone 5"], FBiOSTargetQuery.devices([FBControlCoreConfiguration_Device_iPhone5()])),
-  (["iPad 2"], FBiOSTargetQuery.devices([FBControlCoreConfiguration_Device_iPad2()])),
-  (["iOS 9.0", "iOS 9.1"], FBiOSTargetQuery.osVersions([FBControlCoreConfiguration_iOS_9_0(), FBControlCoreConfiguration_iOS_9_1()])),
-  (["--state=creating"], FBiOSTargetQuery.simulatorStates([.creating])),
-  (["--state=shutdown"], FBiOSTargetQuery.simulatorStates([.shutdown])),
-  (["--state=booted"], FBiOSTargetQuery.simulatorStates([.booted])),
-  (["--state=booting"], FBiOSTargetQuery.simulatorStates([.booting])),
-  (["--state=shutting-down"], FBiOSTargetQuery.simulatorStates([.shuttingDown])),
-  (["--arch=i386"], FBiOSTargetQuery.architectures([.I386])),
-  (["--arch=x86_64"], FBiOSTargetQuery.architectures([.X86_64])),
-  (["--arch=armv7"], FBiOSTargetQuery.architectures([.armv7])),
-  (["--arch=armv7s"], FBiOSTargetQuery.architectures([.armv7s])),
-  (["--arch=arm64"], FBiOSTargetQuery.architectures([.arm64])),
-  (["--simulators"], FBiOSTargetQuery.targetType(FBiOSTargetType.simulator)),
-  (["--devices"], FBiOSTargetQuery.targetType(FBiOSTargetType.device)),
-  (["--simulators", "--devices", "iPhone 6s"], FBiOSTargetQuery.targetType(FBiOSTargetType.simulator.union(FBiOSTargetType.device)).devices([FBControlCoreConfiguration_Device_iPhone6S()])),
-  (["--first", "2", "iPhone 6"], FBiOSTargetQuery.devices([FBControlCoreConfiguration_Device_iPhone6()]).ofCount(2)),
-  (["B8EEA6C4-841B-47E5-92DE-014E0ECD8139"], FBiOSTargetQuery.udids(["B8EEA6C4-841B-47E5-92DE-014E0ECD8139"])),
-  (["0123456789abcdefABCDEFaaaaaaaaaaaaaaaaaa"], FBiOSTargetQuery.udids(["0123456789abcdefABCDEFaaaaaaaaaaaaaaaaaa"])),
-  (["iPhone 5", "iPad 2"], FBiOSTargetQuery.devices([FBControlCoreConfiguration_Device_iPhone5(), FBControlCoreConfiguration_Device_iPad2()])),
-  (["--state=creating", "--state=booting", "--state=shutdown"], FBiOSTargetQuery.simulatorStates([.creating, .booting, .shutdown])),
-  (["--arch=i386", "--arch=armv7s"], FBiOSTargetQuery.architectures([.I386, .armv7s])),
-  (["B8EEA6C4-841B-47E5-92DE-014E0ECD8139", "124DAC9C-4DFF-4F0C-9828-998CCFFCD4C8", "0123456789abcdefABCDEFaaaaaaaaaaaaaaaaaa"], FBiOSTargetQuery.udids(["B8EEA6C4-841B-47E5-92DE-014E0ECD8139", "124DAC9C-4DFF-4F0C-9828-998CCFFCD4C8", "0123456789abcdefABCDEFaaaaaaaaaaaaaaaaaa"])),
-  (["iPhone 6", "124DAC9C-4DFF-4F0C-9828-998CCFFCD4C8"], FBiOSTargetQuery.devices([FBControlCoreConfiguration_Device_iPhone6()]).udids(["124DAC9C-4DFF-4F0C-9828-998CCFFCD4C8"])),
+  (["all"], .allTargets()),
+  (["iPhone 5"], .device(.modeliPhone5)),
+  (["iPad 2"], .device(.modeliPad2)),
+  (["iOS 9.0", "iOS 9.1"], .osVersions([.nameiOS_9_0, .nameiOS_9_1])),
+  (["--name=foo"], .named("foo")),
+  (["--name", "boo"], .named("boo")),
+  (["--name='Foo Bar'"], .named("Foo Bar")),
+  (["--state=creating"], .state(.creating)),
+  (["--state", "creating"], .state(.creating)),
+  (["--state=shutdown"], .state(.shutdown)),
+  (["--state", "shutdown"], .state(.shutdown)),
+  (["--state=booted"], .state(.booted)),
+  (["--state", "booted"], .state(.booted)),
+  (["--state=booting"], .state(.booting)),
+  (["--state", "booting"], .state(.booting)),
+  (["--state=shutting-down"], .state(.shuttingDown)),
+  (["--state", "shutting-down"], .state(.shuttingDown)),
+  (["--arch=i386"], .architecture(.I386)),
+  (["--arch=x86_64"], .architecture(.X86_64)),
+  (["--arch=armv7"], .architecture(.armv7)),
+  (["--arch=armv7s"], .architecture(.armv7s)),
+  (["--arch=arm64"], .architecture(.arm64)),
+  (["--simulators"], .targetType(.simulator)),
+  (["--devices"], .targetType(.device)),
+  (["--simulators", "--devices", "iPhone 6s"], FBiOSTargetQuery.targetType(FBiOSTargetType.simulator.union(FBiOSTargetType.device)).device(.modeliPhone6S)),
+  (["--first", "2", "iPhone 6"], FBiOSTargetQuery.device(.modeliPhone6).ofCount(2)),
+  (["B8EEA6C4-841B-47E5-92DE-014E0ECD8139"], .udids(["B8EEA6C4-841B-47E5-92DE-014E0ECD8139"])),
+  (["0123456789abcdefABCDEFaaaaaaaaaaaaaaaaaa"], .udids(["0123456789abcdefABCDEFaaaaaaaaaaaaaaaaaa"])),
+  (["iPhone 5", "iPad 2"], .devices([.modeliPhone5, .modeliPad2])),
+  (["--state=creating", "--state=booting", "--state=shutdown"], .simulatorStates([.creating, .booting, .shutdown])),
+  (["--arch=i386", "--arch=armv7s"], .architectures([.I386, .armv7s])),
+  (["B8EEA6C4-841B-47E5-92DE-014E0ECD8139", "124DAC9C-4DFF-4F0C-9828-998CCFFCD4C8", "0123456789abcdefABCDEFaaaaaaaaaaaaaaaaaa"], .udids(["B8EEA6C4-841B-47E5-92DE-014E0ECD8139", "124DAC9C-4DFF-4F0C-9828-998CCFFCD4C8", "0123456789abcdefABCDEFaaaaaaaaaaaaaaaaaa"])),
+  (["iPhone 6", "124DAC9C-4DFF-4F0C-9828-998CCFFCD4C8"], FBiOSTargetQuery.device(.modeliPhone6).udids(["124DAC9C-4DFF-4F0C-9828-998CCFFCD4C8"])),
 ]
 
 let invalidQueries: [[String]] = [
@@ -171,63 +186,72 @@ let invalidQueries: [[String]] = [
 ]
 
 let validActions: [([String], Action)] = [
-  (["approve", "com.foo.bar", "com.bing.bong"], Action.approve(["com.foo.bar", "com.bing.bong"])),
-  (["approve", Fixtures.application.path], Action.approve([Fixtures.application.bundleID])),
-  (["boot", "--locale", "en_US", "--scale=75"], Action.boot(FBSimulatorBootConfiguration.default().withLocalizationOverride(FBLocalizationOverride.withLocale(NSLocale(localeIdentifier: "en_US") as Locale)).scale75Percent())),
-  (["boot", "--locale", "fr_FR"], Action.boot(FBSimulatorBootConfiguration.default().withLocalizationOverride(FBLocalizationOverride.withLocale(Locale(identifier: "fr_FR"))))),
-  (["boot", "--scale=50"], Action.boot(FBSimulatorBootConfiguration.default().scale50Percent())),
-  (["boot", "--scale=25", "--connect-bridge", "--use-nsworkspace"], Action.boot(FBSimulatorBootConfiguration.default().scale25Percent().withOptions([.connectBridge, .useNSWorkspace, .awaitServices]))),
-  (["boot"], Action.boot(nil)),
-  (["clear_keychain", "com.foo.bar"], Action.clearKeychain("com.foo.bar")),
-  (["clear_keychain"], Action.clearKeychain(nil)),
-  (["config"], Action.config),
-  (["create", "--all-missing-defaults"], Action.create(CreationSpecification.allMissingDefaults)),
-  (["create", "iOS 9.0"], Action.create(CreationSpecification.iOS9CreationSpecification)),
-  (["create", "iPhone 6s", "iOS 9.3"], Action.create(CreationSpecification.compoundConfiguration0)),
-  (["create", "iPhone 6"], Action.create(CreationSpecification.iPhone6Configuration)),
-  (["delete"], Action.delete),
-  (["diagnose", "--content", "--crashes-since", "200", "--system"], Action.diagnose(FBDiagnosticQuery.crashes(of: FBCrashLogInfoProcessType.system, since: Date(timeIntervalSince1970: 200)), DiagnosticFormat.Content)),
-  (["diagnose", "--content", "com.foo.bar", "foo.txt", "bar.txt"], Action.diagnose(FBDiagnosticQuery.files(inApplicationOfBundleID: "com.foo.bar", withFilenames: ["foo.txt", "bar.txt"]), DiagnosticFormat.Content)),
-  (["diagnose", "--crashes-since", "300", "--custom-agent"], Action.diagnose(FBDiagnosticQuery.crashes(of: FBCrashLogInfoProcessType.customAgent, since: Date(timeIntervalSince1970: 300)), DiagnosticFormat.CurrentFormat)),
-  (["diagnose", "--name", "log1", "--name", "log2"], Action.diagnose(FBDiagnosticQuery.named(["log1", "log2"]), DiagnosticFormat.CurrentFormat)),
-  (["diagnose", "--path", "--crashes-since", "100", "--application"], Action.diagnose(FBDiagnosticQuery.crashes(of: FBCrashLogInfoProcessType.application, since: Date(timeIntervalSince1970: 100)), DiagnosticFormat.Path)),
-  (["diagnose"], Action.diagnose(FBDiagnosticQuery.all(), DiagnosticFormat.CurrentFormat)),
-  (["erase"], Action.erase),
-  (["install", Fixtures.application.path], Action.install(Fixtures.application.path, false)),
-  (["keyboard_override"], Action.keyboardOverride),
-  (["launch", "--stderr", "com.foo.bar", "--foo", "-b", "-a", "-r"], Action.launchApp(FBApplicationLaunchConfiguration(bundleID: "com.foo.bar", bundleName: nil, arguments: ["--foo", "-b", "-a", "-r"], environment: [:], output: try! FBProcessOutputConfiguration(stdOut: NSNull(), stdErr: FBProcessOutputToFileDefaultLocation)))),
-  (["launch", "com.foo.bar"], Action.launchApp(FBApplicationLaunchConfiguration(bundleID: "com.foo.bar", bundleName: nil, arguments: [], environment: [:], output: FBProcessOutputConfiguration.outputToDevNull()))),
-  (["launch", "--stderr", Fixtures.application.path], Action.launchApp(FBApplicationLaunchConfiguration(bundleID: Fixtures.application.bundleID, bundleName: nil, arguments: [], environment: [:], output: try! FBProcessOutputConfiguration(stdOut: NSNull(), stdErr: FBProcessOutputToFileDefaultLocation)))),
-  (["launch", Fixtures.application.path], Action.launchApp(FBApplicationLaunchConfiguration(bundleID: Fixtures.application.bundleID, bundleName: nil, arguments: [], environment: [:], output: FBProcessOutputConfiguration.outputToDevNull()))),
-  (["launch", Fixtures.binary.path, "--foo", "-b", "-a", "-r"], Action.launchAgent(FBAgentLaunchConfiguration(binary: Fixtures.binary, arguments: ["--foo", "-b", "-a", "-r"], environment: [:], output: FBProcessOutputConfiguration.outputToDevNull()))),
-  (["launch", Fixtures.binary.path], Action.launchAgent(FBAgentLaunchConfiguration(binary: Fixtures.binary, arguments: [], environment: [:], output: FBProcessOutputConfiguration.outputToDevNull()))),
-  (["launch_xctest", Fixtures.testBundlePath, "com.foo.bar", "--foo", "-b", "-a", "-r"], Action.launchXCTest(FBTestLaunchConfiguration(testBundlePath: Fixtures.testBundlePath).withApplicationLaunchConfiguration(FBApplicationLaunchConfiguration(bundleID: "com.foo.bar", bundleName: nil, arguments: ["--foo", "-b", "-a", "-r"], environment: [:], output: FBProcessOutputConfiguration.outputToDevNull())))),
-  (["launch_xctest", Fixtures.testBundlePath, "com.foo.bar"], Action.launchXCTest(FBTestLaunchConfiguration(testBundlePath: Fixtures.testBundlePath).withApplicationLaunchConfiguration(FBApplicationLaunchConfiguration(bundleID: "com.foo.bar", bundleName: nil, arguments: [], environment: [:], output: FBProcessOutputConfiguration.outputToDevNull())))),
-  (["launch_xctest", Fixtures.testBundlePath, Fixtures.application.path], Action.launchXCTest(FBTestLaunchConfiguration(testBundlePath: Fixtures.testBundlePath).withApplicationLaunchConfiguration(FBApplicationLaunchConfiguration(bundleID: Fixtures.application.bundleID, bundleName: nil, arguments: [], environment: [:], output: FBProcessOutputConfiguration.outputToDevNull())).withTestHostPath(Fixtures.application.path))),
-  (["launch_xctest", "--test-timeout", "900", Fixtures.testBundlePath, Fixtures.application.path], Action.launchXCTest(FBTestLaunchConfiguration(testBundlePath: Fixtures.testBundlePath).withApplicationLaunchConfiguration(FBApplicationLaunchConfiguration(bundleID: Fixtures.application.bundleID, bundleName: nil, arguments: [], environment: [:], output: FBProcessOutputConfiguration.outputToDevNull())).withTestHostPath(Fixtures.application.path).withTimeout(900))),
-  (["list"], Action.list),
-  (["list_apps"], Action.listApps),
-  (["list_device_sets"], Action.listDeviceSets),
-  (["listen", "--stdin"], Action.listen(ListenInterface(stdin: true, http: nil, hid: nil))),
-  (["listen", "--http", "43"], Action.listen(ListenInterface(stdin: false, http: 43, hid: nil))),
-  (["listen", "--hid", "44"], Action.listen(ListenInterface(stdin: false, http: nil, hid: 44))),
-  (["listen", "--http", "43", "--stdin"], Action.listen(ListenInterface(stdin: true, http: 43, hid: nil))),
-  (["listen", "--http", "43", "--hid", "44"], Action.listen(ListenInterface(stdin: false, http: 43, hid: 44))),
-  (["listen"], Action.listen(ListenInterface(stdin: false, http: nil, hid: nil))),
-  (["open", "aoo://bar/baz"], Action.open(URL(string: "aoo://bar/baz")!)),
-  (["open", "http://facebook.com"], Action.open(URL(string: "http://facebook.com")!)),
-  (["record", "start"], Action.record(true)),
-  (["record", "stop"], Action.record(false)),
-  (["relaunch", "com.foo.bar", "--foo", "-b", "-a", "-r"], Action.relaunch(FBApplicationLaunchConfiguration(bundleID: "com.foo.bar", bundleName: nil, arguments: ["--foo", "-b", "-a", "-r"], environment: [:], output: FBProcessOutputConfiguration.outputToDevNull()))),
-  (["relaunch", "com.foo.bar"], Action.relaunch(FBApplicationLaunchConfiguration(bundleID: "com.foo.bar", bundleName: nil, arguments: [], environment: [:], output: FBProcessOutputConfiguration.outputToDevNull()))),
-  (["service_info", "com.foo.bar"], Action.serviceInfo("com.foo.bar")),
-  (["shutdown"], Action.shutdown),
-  (["shutdown"], Action.shutdown),
-  (["terminate", "com.foo.bar"], Action.terminate("com.foo.bar")),
-  (["uninstall", "com.foo.bar"], Action.uninstall("com.foo.bar")),
-  (["upload", Fixtures.photoPath, Fixtures.videoPath], Action.upload([Fixtures.photoDiagnostic, Fixtures.videoDiagnostic])),
-  (["watchdog_override", "60", "com.foo.bar", "com.bar.baz"], Action.watchdogOverride(["com.foo.bar", "com.bar.baz"], 60)),
-  (["set_location", "39.9", "116.39"], Action.setLocation(39.9, 116.39)),
+  (["approve", "com.foo.bar", "com.bing.bong"], .approve(["com.foo.bar", "com.bing.bong"])),
+  (["approve", Fixtures.application.path], .approve([Fixtures.application.bundleID])),
+  (["boot", "--locale", "en_US", "--scale=75"], .boot(FBSimulatorBootConfiguration.default().withLocalizationOverride(FBLocalizationOverride.withLocale(NSLocale(localeIdentifier: "en_US") as Locale)).scale75Percent())),
+  (["boot", "--locale", "fr_FR"], .boot(FBSimulatorBootConfiguration.default().withLocalizationOverride(FBLocalizationOverride.withLocale(Locale(identifier: "fr_FR"))))),
+  (["boot", "--scale=50"], .boot(FBSimulatorBootConfiguration.default().scale50Percent())),
+  (["boot", "--scale=25", "--connect-bridge", "--use-nsworkspace"], .boot(FBSimulatorBootConfiguration.default().scale25Percent().withOptions([.connectBridge, .useNSWorkspace, .awaitServices]))),
+  (["boot"], .boot(FBSimulatorBootConfiguration.default())),
+  (["clear_keychain", "com.foo.bar"], .clearKeychain("com.foo.bar")),
+  (["clear_keychain"], .clearKeychain(nil)),
+  (["config"], .config),
+  (["create", "--all-missing-defaults"], .create(CreationSpecification.allMissingDefaults)),
+  (["create", "iOS 9.0"], .create(CreationSpecification.iOS9CreationSpecification)),
+  (["create", "iPhone 6s", "iOS 9.3"], .create(CreationSpecification.compoundConfiguration0)),
+  (["create", "iPhone 6"], .create(CreationSpecification.iPhone6Configuration)),
+  (["delete"], .delete),
+  (["diagnose", "--content", "--crashes-since", "200", "--system"], .diagnose(FBDiagnosticQuery.crashes(of: FBCrashLogInfoProcessType.system, since: Date(timeIntervalSince1970: 200)), DiagnosticFormat.Content)),
+  (["diagnose", "--content", "com.foo.bar", "foo.txt", "bar.txt"], .diagnose(FBDiagnosticQuery.files(inApplicationOfBundleID: "com.foo.bar", withFilenames: ["foo.txt", "bar.txt"]), DiagnosticFormat.Content)),
+  (["diagnose", "--crashes-since", "300", "--custom-agent"], .diagnose(FBDiagnosticQuery.crashes(of: FBCrashLogInfoProcessType.customAgent, since: Date(timeIntervalSince1970: 300)), DiagnosticFormat.CurrentFormat)),
+  (["diagnose", "--name", "log1", "--name", "log2"], .diagnose(FBDiagnosticQuery.named(["log1", "log2"]), DiagnosticFormat.CurrentFormat)),
+  (["diagnose", "--path", "--crashes-since", "100", "--application"], .diagnose(FBDiagnosticQuery.crashes(of: FBCrashLogInfoProcessType.application, since: Date(timeIntervalSince1970: 100)), DiagnosticFormat.Path)),
+  (["diagnose"], .diagnose(FBDiagnosticQuery.all(), DiagnosticFormat.CurrentFormat)),
+  (["erase"], .erase),
+  (["focus"], .focus),
+  (["install", Fixtures.application.path], .install(Fixtures.application.path, false)),
+  (["install", Fixtures.application.path, "--codesign"], .install(Fixtures.application.path, true)),
+  (["keyboard_override"], .keyboardOverride),
+  (["launch", "--stderr", "com.foo.bar", "--foo", "-b", "-a", "-r"], .launchApp(FBApplicationLaunchConfiguration(bundleID: "com.foo.bar", bundleName: nil, arguments: ["--foo", "-b", "-a", "-r"], environment: [:], waitForDebugger: false, output: try! FBProcessOutputConfiguration(stdOut: NSNull(), stdErr: FBProcessOutputToFileDefaultLocation)))),
+  (["launch", "com.foo.bar"], .launchApp(FBApplicationLaunchConfiguration(bundleID: "com.foo.bar", bundleName: nil, arguments: [], environment: [:], waitForDebugger: false, output: FBProcessOutputConfiguration.outputToDevNull()))),
+  (["launch", "-w", "com.foo.bar"], .launchApp(FBApplicationLaunchConfiguration(bundleID: "com.foo.bar", bundleName: nil, arguments: [], environment: [:], waitForDebugger: true, output: FBProcessOutputConfiguration.outputToDevNull()))),
+  (["launch", "--wait-for-debugger", "com.foo.bar"], .launchApp(FBApplicationLaunchConfiguration(bundleID: "com.foo.bar", bundleName: nil, arguments: [], environment: [:], waitForDebugger: true, output: FBProcessOutputConfiguration.outputToDevNull()))),
+  (["launch", "--stderr", Fixtures.application.path], .launchApp(FBApplicationLaunchConfiguration(bundleID: Fixtures.application.bundleID, bundleName: nil, arguments: [], environment: [:], waitForDebugger: false, output: try! FBProcessOutputConfiguration(stdOut: NSNull(), stdErr: FBProcessOutputToFileDefaultLocation)))),
+  (["launch", Fixtures.application.path], .launchApp(FBApplicationLaunchConfiguration(bundleID: Fixtures.application.bundleID, bundleName: nil, arguments: [], environment: [:], waitForDebugger: false, output: FBProcessOutputConfiguration.outputToDevNull()))),
+  (["launch", Fixtures.binary.path, "--foo", "-b", "-a", "-r"], .launchAgent(FBAgentLaunchConfiguration(binary: Fixtures.binary, arguments: ["--foo", "-b", "-a", "-r"], environment: [:], output: FBProcessOutputConfiguration.outputToDevNull()))),
+  (["launch", Fixtures.binary.path], .launchAgent(FBAgentLaunchConfiguration(binary: Fixtures.binary, arguments: [], environment: [:], output: FBProcessOutputConfiguration.outputToDevNull()))),
+  (["launch_xctest", Fixtures.testBundlePath, "com.foo.bar", "--foo", "-b", "-a", "-r"], .launchXCTest(FBTestLaunchConfiguration(testBundlePath: Fixtures.testBundlePath).withApplicationLaunchConfiguration(FBApplicationLaunchConfiguration(bundleID: "com.foo.bar", bundleName: nil, arguments: ["--foo", "-b", "-a", "-r"], environment: [:], waitForDebugger: false, output: FBProcessOutputConfiguration.outputToDevNull())))),
+  (["launch_xctest", Fixtures.testBundlePath, "com.foo.bar"], .launchXCTest(FBTestLaunchConfiguration(testBundlePath: Fixtures.testBundlePath).withApplicationLaunchConfiguration(FBApplicationLaunchConfiguration(bundleID: "com.foo.bar", bundleName: nil, arguments: [], environment: [:], waitForDebugger: false, output: FBProcessOutputConfiguration.outputToDevNull())))),
+  (["launch_xctest", Fixtures.testBundlePath, Fixtures.application.path], .launchXCTest(FBTestLaunchConfiguration(testBundlePath: Fixtures.testBundlePath).withApplicationLaunchConfiguration(FBApplicationLaunchConfiguration(bundleID: Fixtures.application.bundleID, bundleName: nil, arguments: [], environment: [:], waitForDebugger: false, output: FBProcessOutputConfiguration.outputToDevNull())).withTestHostPath(Fixtures.application.path))),
+  (["launch_xctest", "--test-timeout", "900", Fixtures.testBundlePath, Fixtures.application.path], .launchXCTest(FBTestLaunchConfiguration(testBundlePath: Fixtures.testBundlePath).withApplicationLaunchConfiguration(FBApplicationLaunchConfiguration(bundleID: Fixtures.application.bundleID, bundleName: nil, arguments: [], environment: [:], waitForDebugger: false, output: FBProcessOutputConfiguration.outputToDevNull())).withTestHostPath(Fixtures.application.path).withTimeout(900))),
+  (["list"], .list),
+  (["list_apps"], .listApps),
+  (["list_device_sets"], .listDeviceSets),
+  (["listen", "--stdin"], .listen(ListenInterface(stdin: true, http: nil, hid: nil, handle: nil))),
+  (["listen", "--http", "43"], .listen(ListenInterface(stdin: false, http: 43, hid: nil, handle: nil))),
+  (["listen", "--hid", "44"], .listen(ListenInterface(stdin: false, http: nil, hid: 44, handle: nil))),
+  (["listen", "--http", "43", "--stdin"], .listen(ListenInterface(stdin: true, http: 43, hid: nil, handle: nil))),
+  (["listen", "--http", "43", "--hid", "44"], .listen(ListenInterface(stdin: false, http: 43, hid: 44, handle: nil))),
+  (["listen"], .listen(ListenInterface(stdin: false, http: nil, hid: nil, handle: nil))),
+  (["open", "aoo://bar/baz"], .open(URL(string: "aoo://bar/baz")!)),
+  (["open", "http://facebook.com"], .open(URL(string: "http://facebook.com")!)),
+  (["record", "start"], .record(.start(nil))),
+  (["record", "start", "/var/video.mp4"], .record(.start("/var/video.mp4"))),
+  (["record", "stop"], .record(.stop)),
+  (["relaunch", "com.foo.bar", "--foo", "-b", "-a", "-r"], .relaunch(FBApplicationLaunchConfiguration(bundleID: "com.foo.bar", bundleName: nil, arguments: ["--foo", "-b", "-a", "-r"], environment: [:], waitForDebugger: false, output: FBProcessOutputConfiguration.outputToDevNull()))),
+  (["relaunch", "com.foo.bar"], .relaunch(FBApplicationLaunchConfiguration(bundleID: "com.foo.bar", bundleName: nil, arguments: [], environment: [:], waitForDebugger: false, output: FBProcessOutputConfiguration.outputToDevNull()))),
+  (["relaunch", "--wait-for-debugger", "com.foo.bar"], .relaunch(FBApplicationLaunchConfiguration(bundleID: "com.foo.bar", bundleName: nil, arguments: [], environment: [:], waitForDebugger: true, output: FBProcessOutputConfiguration.outputToDevNull()))),
+  (["service_info", "com.foo.bar"], .serviceInfo("com.foo.bar")),
+  (["shutdown"], .shutdown),
+  (["shutdown"], .shutdown),
+  (["stream"], .stream(nil)),
+  (["stream", "-"], .stream(.standardOut)),
+  (["stream", "/tmp/video.dump"], .stream(.path("/tmp/video.dump"))),
+  (["terminate", "com.foo.bar"], .terminate("com.foo.bar")),
+  (["uninstall", "com.foo.bar"], .uninstall("com.foo.bar")),
+  (["upload", Fixtures.photoPath, Fixtures.videoPath], .upload([Fixtures.photoDiagnostic, Fixtures.videoDiagnostic])),
+  (["watchdog_override", "60", "com.foo.bar", "com.bar.baz"], .watchdogOverride(["com.foo.bar", "com.bar.baz"], 60)),
+  (["set_location", "39.9", "116.39"], .setLocation(39.9, 116.39)),
 ]
 
 let invalidActions: [[String]] = [
@@ -263,6 +287,13 @@ class ActionParserTests : XCTestCase {
   func testFailsToParseInvalidActions() {
     self.assertFailsToParseAll(Action.parser, invalidActions)
   }
+
+  func testParsesInsidePrint() {
+    let pairs = validActions.map { (tokens, action) in
+      return (["print"] + tokens, CLI.print(action))
+    }
+    self.assertParsesAll(CLI.parser, pairs)
+  }
 }
 
 class CommandParserTests : XCTestCase {
@@ -276,7 +307,7 @@ class CommandParserTests : XCTestCase {
     let compoundComponents = [
       ["list"], ["boot"], ["listen", "--http", "1000"], ["shutdown"],
     ]
-    let actions: [Action] = [Action.list, Action.boot(nil), Action.listen(ListenInterface(stdin: false, http: 1000, hid: nil)), Action.shutdown]
+    let actions: [Action] = [.list, .boot(FBSimulatorBootConfiguration.default()), .listen(ListenInterface(stdin: false, http: 1000, hid: nil, handle: nil)), .shutdown]
     self.assertParsesImplodingCompoundActions(actions, compoundComponents: compoundComponents)
   }
 
@@ -288,7 +319,23 @@ class CommandParserTests : XCTestCase {
       .withOptions([.enableDirectLaunch, .awaitServices])
       .withFramebuffer(FBFramebufferConfiguration.default())
     let diagnoseAction = Action.diagnose(FBDiagnosticQuery.all(), DiagnosticFormat.CurrentFormat)
-    let actions: [Action] = [Action.list, Action.create(CreationSpecification.iPhone6Configuration), Action.boot(launchConfiguration), Action.listen(ListenInterface(stdin: false, http: 8090, hid: nil)), Action.shutdown, diagnoseAction]
+    let actions: [Action] = [.list, .create(CreationSpecification.iPhone6Configuration), .boot(launchConfiguration), .listen(ListenInterface(stdin: false, http: 8090, hid: nil, handle: nil)), .shutdown, diagnoseAction]
+    self.assertParsesImplodingCompoundActions(actions, compoundComponents: compoundComponents)
+  }
+
+  func testParsesRecordStartListen() {
+    let compoundComponents = [
+      ["record", "start"], ["listen"],
+    ]
+    let actions: [Action] = [.record(.start(nil)), .listen(ListenInterface())]
+    self.assertParsesImplodingCompoundActions(actions, compoundComponents: compoundComponents)
+  }
+
+  func testParsesRecordToPathStartListen() {
+    let compoundComponents = [
+      ["record", "start", "/tmp/video.mp4"], ["listen"],
+    ]
+    let actions: [Action] = [.record(.start("/tmp/video.mp4")), .listen(ListenInterface())]
     self.assertParsesImplodingCompoundActions(actions, compoundComponents: compoundComponents)
   }
 
@@ -303,9 +350,9 @@ class CommandParserTests : XCTestCase {
     let compoundComponents = [
       ["launch", "--stdout", "com.foo.bar", "--foo", "--bar"], ["launch", Fixtures.application.path, "--bing", "--bong"],
     ]
-    let launchConfig1 = FBApplicationLaunchConfiguration(bundleID: "com.foo.bar", bundleName: nil, arguments: ["--foo", "--bar"], environment: [:], output: try! FBProcessOutputConfiguration(stdOut: FBProcessOutputToFileDefaultLocation, stdErr: NSNull()))
-    let launchConfig2 = FBApplicationLaunchConfiguration(bundleID: Fixtures.application.bundleID, bundleName: nil, arguments: ["--bing", "--bong"], environment: [:], output: FBProcessOutputConfiguration.outputToDevNull())
-    let actions: [Action] = [Action.launchApp(launchConfig1), Action.launchApp(launchConfig2)]
+    let launchConfig1 = FBApplicationLaunchConfiguration(bundleID: "com.foo.bar", bundleName: nil, arguments: ["--foo", "--bar"], environment: [:], waitForDebugger: false, output: try! FBProcessOutputConfiguration(stdOut: FBProcessOutputToFileDefaultLocation, stdErr: NSNull()))
+    let launchConfig2 = FBApplicationLaunchConfiguration(bundleID: Fixtures.application.bundleID, bundleName: nil, arguments: ["--bing", "--bong"], environment: [:], waitForDebugger: false, output: FBProcessOutputConfiguration.outputToDevNull())
+    let actions: [Action] = [.launchApp(launchConfig1), .launchApp(launchConfig2)]
     self.assertParsesImplodingCompoundActions(actions, compoundComponents: compoundComponents)
   }
 
@@ -316,12 +363,12 @@ class CommandParserTests : XCTestCase {
   func assertWithDefaultActions(_ actions: [Action], suffix: [String]) {
     return self.unzipAndAssert(actions, suffix: suffix, extras: [
       ([], nil, nil),
-      (["all"], FBiOSTargetQuery.allTargets(), nil),
-      (["iPad 2"], FBiOSTargetQuery.devices([FBControlCoreConfiguration_Device_iPad2()]), nil),
-      (["B8EEA6C4-841B-47E5-92DE-014E0ECD8139"], FBiOSTargetQuery.udids(["B8EEA6C4-841B-47E5-92DE-014E0ECD8139"]), nil),
-      (["iPhone 5", "--state=shutdown", "iPhone 6"], FBiOSTargetQuery.devices([FBControlCoreConfiguration_Device_iPhone5(), FBControlCoreConfiguration_Device_iPhone6()]).simulatorStates([.shutdown]), nil),
-      (["iPad 2", "--device-name", "--os"], FBiOSTargetQuery.devices([FBControlCoreConfiguration_Device_iPad2()]), FBiOSTargetFormat(fields: [.deviceName, .osVersion])),
-      (["B8EEA6C4-841B-47E5-92DE-014E0ECD8139"], FBiOSTargetQuery.udids(["B8EEA6C4-841B-47E5-92DE-014E0ECD8139"]), nil),
+      (["all"], .allTargets(), nil),
+      (["iPad 2"], .device(.modeliPad2), nil),
+      (["B8EEA6C4-841B-47E5-92DE-014E0ECD8139"], .udids(["B8EEA6C4-841B-47E5-92DE-014E0ECD8139"]), nil),
+      (["iPhone 5", "--state=shutdown", "iPhone 6"], FBiOSTargetQuery.devices([.modeliPhone5, .modeliPhone6]).state(.shutdown), nil),
+      (["iPad 2", "--format=%m%o"], .device(.modeliPad2), FBiOSTargetFormat(fields: [.model, .osVersion])),
+      (["B8EEA6C4-841B-47E5-92DE-014E0ECD8139"], .udids(["B8EEA6C4-841B-47E5-92DE-014E0ECD8139"]), nil),
     ])
   }
 

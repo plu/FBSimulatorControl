@@ -70,9 +70,14 @@
   return NO;
 }
 
-- (BOOL)startRecordingWithError:(NSError **)error
+- (nullable id<FBXCTestCommands>)startRecordingToFile:(NSString *)filePath error:(NSError **)error
 {
-  return NO;
+  return nil;
+}
+
+- (nullable id<FBBitmapStream>)createStreamWithError:(NSError **)error
+{
+  return nil;
 }
 
 - (BOOL)stopRecordingWithError:(NSError **)error
@@ -85,9 +90,9 @@
   return nil;
 }
 
-- (BOOL)startTestWithLaunchConfiguration:(FBTestLaunchConfiguration *)testLaunchConfiguration error:(NSError **)error
+- (nullable id<FBXCTestOperation>)startTestWithLaunchConfiguration:(FBTestLaunchConfiguration *)testLaunchConfiguration error:(NSError **)error
 {
-  return NO;
+  return nil;
 }
 
 - (BOOL)waitUntilAllTestRunnersHaveFinishedTestingWithTimeout:(NSTimeInterval)timeout error:(NSError **)error

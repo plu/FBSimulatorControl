@@ -14,7 +14,11 @@
 #import "FBSimulator+Connection.h"
 #import "FBSimulator+Framebuffer.h"
 #import "FBFramebuffer.h"
-#import "FBFramebufferVideo.h"
+#import "FBSimulatorVideo.h"
+#import "FBFramebufferSurface.h"
+#import "FBSimulatorBitmapStream.h"
+
+FBTerminationHandleType const FBTerminationTypeHandleVideoStreaming = @"VideoStreaming";
 
 @interface FBSimulatorVideoRecordingCommands ()
 
@@ -42,68 +46,73 @@
 
 #pragma mark FBVideoRecordingCommands Implementation
 
-- (BOOL)startRecordingWithError:(NSError **)error
+- (nullable id<FBVideoRecordingSession>)startRecordingToFile:(NSString *)filePath error:(NSError **)error
 {
   NSError *innerError = nil;
-  id<FBFramebufferVideo> video = [self obtainSimulatorVideoWithError:&innerError];
+  FBSimulatorVideo *video = [self obtainSimulatorVideoWithError:&innerError];
   if (!video) {
-    return [FBSimulatorError failBoolWithError:innerError errorOut:error];
+    return [FBSimulatorError failWithError:innerError errorOut:error];
   }
-
-  dispatch_group_t waitGroup = dispatch_group_create();
-  [video startRecording:waitGroup];
-  long fail = dispatch_group_wait(waitGroup, FBControlCoreGlobalConfiguration.regularDispatchTimeout);
-  if (fail) {
-    return [[FBSimulatorError
-      describeFormat:@"Timeout waiting for video to start recording in %f seconds", FBControlCoreGlobalConfiguration.regularTimeout]
-      failBool:error];
+  if (![video startRecordingToFile:filePath timeout:FBControlCoreGlobalConfiguration.regularTimeout error:error]) {
+    return nil;
   }
-  return YES;
+  return video;
 }
 
 - (BOOL)stopRecordingWithError:(NSError **)error
 {
   NSError *innerError = nil;
-  id<FBFramebufferVideo> video = [self obtainSimulatorVideoWithError:&innerError];
+  FBSimulatorVideo *video = [self obtainSimulatorVideoWithError:&innerError];
   if (!video) {
     return [FBSimulatorError failBoolWithError:innerError errorOut:error];
   }
-
-  dispatch_group_t waitGroup = dispatch_group_create();
-  [video stopRecording:waitGroup];
-  long fail = dispatch_group_wait(waitGroup, FBControlCoreGlobalConfiguration.regularDispatchTimeout);
-  if (fail) {
-    return [[FBSimulatorError
-      describeFormat:@"Timeout waiting for video to stop recording in %f seconds", FBControlCoreGlobalConfiguration.regularTimeout]
-      failBool:error];
-  }
-  return YES;
+  return [video stopRecordingWithTimeout:FBControlCoreGlobalConfiguration.regularTimeout error:error];
 }
 
-#pragma mark
+#pragma mark FBSimulatorStreamingCommands
 
-- (id<FBFramebufferVideo>)obtainSimulatorVideoWithError:(NSError **)error
+- (nullable FBSimulatorBitmapStream *)createStreamWithError:(NSError **)error
 {
-  FBSimulator *simulator = self.simulator;
-  if (simulator.state != FBSimulatorStateBooted) {
-    return [[FBSimulatorError
-      describeFormat:@"Cannot get the Video for a non-booted simulator %@", simulator]
-      fail:error];
+  FBFramebufferSurface *surface = [self obtainSurfaceWithError:error];
+  if (!surface) {
+    return nil;
   }
+  return [FBSimulatorBitmapStream streamWithSurface:surface logger:self.simulator.logger];
+}
 
+#pragma mark Private
+
+- (FBSimulatorVideo *)obtainSimulatorVideoWithError:(NSError **)error
+{
   NSError *innerError = nil;
-  FBFramebuffer *framebuffer = [simulator framebufferWithError:&innerError];
+  FBFramebuffer *framebuffer = [self.simulator framebufferWithError:&innerError];
   if (!framebuffer) {
     return [FBSimulatorError failWithError:innerError errorOut:error];
   }
-  id<FBFramebufferVideo> video = framebuffer.video;
+  FBSimulatorVideo *video = framebuffer.video;
   if (!video) {
     return [[[FBSimulatorError
-      describe:@"Simulator Does not have a FBFramebufferVideo instance"]
-      inSimulator:simulator]
+      describe:@"Simulator Does not have a FBSimulatorVideo instance"]
+      inSimulator:self.simulator]
       fail:error];
   }
   return video;
+}
+
+- (FBFramebufferSurface *)obtainSurfaceWithError:(NSError **)error
+{
+  NSError *innerError = nil;
+  FBFramebuffer *framebuffer = [self.simulator framebufferWithError:&innerError];
+  if (!framebuffer) {
+    return [FBSimulatorError failWithError:innerError errorOut:error];
+  }
+  FBFramebufferSurface *surface = framebuffer.surface;
+  if (!surface) {
+    return [[FBSimulatorError
+      describe:@"Framebuffer does not have a surface"]
+      fail:error];
+  }
+  return surface;
 }
 
 @end

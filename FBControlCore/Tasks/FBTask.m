@@ -20,6 +20,7 @@
 #pragma clang diagnostic ignored "-Warc-retain-cycles"
 
 NSString *const FBTaskErrorDomain = @"com.facebook.FBControlCore.task";
+FBTerminationHandleType const FBTerminationHandleTypeTask = @"Task";
 
 @interface FBTaskOutput : NSObject
 
@@ -312,7 +313,7 @@ NSString *const FBTaskErrorDomain = @"com.facebook.FBControlCore.task";
   }
   else if ([output conformsToProtocol:@protocol(FBControlCoreLogger)]) {
     id<FBControlCoreLogger> logger = output;
-    consumer = [FBLineFileConsumer lineReaderWithConsumer:^(NSString *line) {
+    consumer = [FBLineFileConsumer asynchronousReaderWithConsumer:^(NSString *line) {
       [logger log:line];
     }];
   }
@@ -354,6 +355,11 @@ NSString *const FBTaskErrorDomain = @"com.facebook.FBControlCore.task";
 - (void)terminate
 {
   [self terminateWithErrorMessage:nil];
+}
+
+- (FBTerminationHandleType)type
+{
+  return FBTerminationHandleTypeTask;
 }
 
 #pragma mark - FBTask Protocl

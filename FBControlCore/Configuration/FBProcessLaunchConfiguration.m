@@ -12,10 +12,6 @@
 
 #import <FBControlCore/FBControlCore.h>
 
-static NSString *const OptionConnectStdout = @"connect_stdout";
-static NSString *const OptionConnectStderr = @"connect_stderr";
-static NSString *const KeyBundleID = @"bundle_id";
-static NSString *const KeyBundleName = @"bundle_name";
 static NSString *const KeyArguments = @"arguments";
 static NSString *const KeyEnvironment = @"environment";
 static NSString *const KeyOutput = @"output";
@@ -138,292 +134,38 @@ static NSString *const KeyOutput = @"output";
   };
 }
 
-@end
-
-@implementation FBApplicationLaunchConfiguration
-
-+ (instancetype)configurationWithBundleID:(NSString *)bundleID bundleName:(NSString *)bundleName arguments:(NSArray<NSString *> *)arguments environment:(NSDictionary<NSString *, NSString *> *)environment output:(FBProcessOutputConfiguration *)output
++ (BOOL)fromJSON:(id)json extractArguments:(NSArray<NSString *> **)argumentsOut environment:(NSDictionary<NSString *, NSString *> **)environmentOut output:(FBProcessOutputConfiguration **)outputOut error:(NSError **)error
 {
-  if (!bundleID || !arguments || !environment) {
-    return nil;
-  }
-
-  return [[self alloc] initWithBundleID:bundleID bundleName:bundleName arguments:arguments environment:environment output:output];
-}
-
-+ (instancetype)configurationWithApplication:(FBApplicationDescriptor *)application arguments:(NSArray<NSString *> *)arguments environment:(NSDictionary<NSString *, NSString *> *)environment output:(FBProcessOutputConfiguration *)output
-{
-  if (!application) {
-    return nil;
-  }
-
-  return [self configurationWithBundleID:application.bundleID bundleName:application.name arguments:arguments environment:environment output:output];
-}
-
-+ (instancetype)inflateFromJSON:(id)json error:(NSError **)error
-{
-  NSString *bundleID = json[KeyBundleID];
-  if (![bundleID isKindOfClass:NSString.class]) {
-    return [[FBControlCoreError describeFormat:@"%@ is not a bundle_id", bundleID] fail:error];
-  }
-  NSString *bundleName = json[KeyBundleName];
-  if (bundleName && ![bundleName isKindOfClass:NSString.class]) {
-    return [[FBControlCoreError describeFormat:@"%@ is not a bundle_name", bundleName] fail:error];
-  }
-  NSArray *arguments = json[KeyArguments] ?: @[];
+  NSArray<NSString *> *arguments = json[KeyArguments] ?: @[];
   if (![FBCollectionInformation isArrayHeterogeneous:arguments withClass:NSString.class]) {
-    return [[FBControlCoreError describeFormat:@"%@ is not an array of strings for arguments", arguments] fail:error];
+    return [[FBControlCoreError
+      describeFormat:@"%@ is not an array of strings for %@", arguments, KeyArguments]
+      failBool:error];
   }
-  NSDictionary *environment = json[KeyEnvironment] ?: @{};
+  NSDictionary<NSString *, NSString *> *environment = json[KeyEnvironment] ?: @{};
   if (![FBCollectionInformation isDictionaryHeterogeneous:environment keyClass:NSString.class valueClass:NSString.class]) {
-    return [[FBControlCoreError describeFormat:@"%@ is not an dictionary of <string, strings> for environment", arguments] fail:error];
+    return [[FBControlCoreError
+      describeFormat:@"%@ is not an dictionary of <string, strings> for %@", arguments, KeyEnvironment]
+      failBool:error];
   }
-
   FBProcessOutputConfiguration *output = [[FBProcessOutputConfiguration alloc] init];
   NSDictionary *outputDictionary = json[KeyOutput];
   if (outputDictionary) {
     output = [FBProcessOutputConfiguration inflateFromJSON:outputDictionary error:error];
     if (!output) {
-      return nil;
+      return NO;
     }
   }
-  return [self configurationWithBundleID:bundleID bundleName:bundleName arguments:arguments environment:environment output:output];
-}
-
-- (instancetype)initWithBundleID:(NSString *)bundleID bundleName:(NSString *)bundleName arguments:(NSArray<NSString *> *)arguments environment:(NSDictionary<NSString *, NSString *> *)environment output:(FBProcessOutputConfiguration *)output
-{
-  self = [super initWithArguments:arguments environment:environment output:output];
-  if (!self) {
-    return nil;
+  if (argumentsOut) {
+    *argumentsOut = arguments;
   }
-
-  _bundleID = bundleID;
-  _bundleName = bundleName;
-
-  return self;
-}
-
-- (instancetype)withOutput:(FBProcessOutputConfiguration *)output
-{
-    return [[FBApplicationLaunchConfiguration alloc]
-      initWithBundleID:self.bundleID
-      bundleName:self.bundleName
-      arguments:self.arguments
-      environment:self.environment
-      output:output];
-}
-
-#pragma mark Abstract Methods
-
-- (NSString *)debugDescription
-{
-  return [NSString stringWithFormat:
-    @"%@ | Arguments %@ | Environment %@ | Output %@",
-    self.shortDescription,
-    self.arguments,
-    self.environment,
-    self.output
-  ];
-}
-
-- (NSString *)shortDescription
-{
-  return [NSString stringWithFormat:@"App Launch %@ (%@)", self.bundleID, self.bundleName];
-}
-
-#pragma mark NSCopying
-
-- (instancetype)copyWithZone:(NSZone *)zone
-{
-  return [[self.class alloc]
-    initWithBundleID:self.bundleID
-    bundleName:self.bundleName
-    arguments:self.arguments
-    environment:self.environment
-    output:self.output];
-}
-
-#pragma mark NSCoding
-
-- (instancetype)initWithCoder:(NSCoder *)coder
-{
-  self = [super initWithCoder:coder];
-  if (!self) {
-    return nil;
+  if (environmentOut) {
+    *environmentOut = environment;
   }
-
-  _bundleID = [coder decodeObjectForKey:NSStringFromSelector(@selector(bundleID))];
-  _bundleName = [coder decodeObjectForKey:NSStringFromSelector(@selector(bundleName))];
-
-  return self;
-}
-
-- (void)encodeWithCoder:(NSCoder *)coder
-{
-  [super encodeWithCoder:coder];
-
-  [coder encodeObject:self.bundleID forKey:NSStringFromSelector(@selector(bundleID))];
-  [coder encodeObject:self.bundleName forKey:NSStringFromSelector(@selector(bundleName))];
-}
-
-#pragma mark NSObject
-
-- (NSUInteger)hash
-{
-  return [super hash] ^ self.bundleID.hash ^ self.bundleName.hash;
-}
-
-- (BOOL)isEqual:(FBApplicationLaunchConfiguration *)object
-{
-  return [super isEqual:object] &&
-         [self.bundleID isEqualToString:object.bundleID] &&
-         (self.bundleName == object.bundleName || [self.bundleName isEqual:object.bundleName]);
-}
-
-#pragma mark FBJSONSerializable
-
-- (NSDictionary *)jsonSerializableRepresentation
-{
-  NSMutableDictionary *representation = [[super jsonSerializableRepresentation] mutableCopy];
-  representation[KeyBundleID] = self.bundleID;
-  representation[KeyBundleName] = self.bundleName;
-  return [representation mutableCopy];
-}
-
-@end
-
-@implementation FBAgentLaunchConfiguration
-
-+ (instancetype)configurationWithBinary:(FBBinaryDescriptor *)agentBinary arguments:(NSArray<NSString *> *)arguments environment:(NSDictionary<NSString *, NSString *> *)environment
-{
-  return [self configurationWithBinary:agentBinary arguments:arguments environment:environment output:FBProcessOutputConfiguration.defaultOutputToFile];
-}
-
-+ (instancetype)configurationWithBinary:(FBBinaryDescriptor *)agentBinary arguments:(NSArray<NSString *> *)arguments environment:(NSDictionary<NSString *, NSString *> *)environment output:(FBProcessOutputConfiguration *)output
-{
-  if (!agentBinary || !arguments || !environment) {
-    return nil;
+  if (outputOut) {
+    *outputOut = output;
   }
-  return [[self alloc] initWithBinary:agentBinary arguments:arguments environment:environment output:output];
-}
-
-+ (instancetype)inflateFromJSON:(id)json error:(NSError **)error
-{
-  NSError *innerError = nil;
-  NSDictionary *binaryJSON = json[@"binary"];
-  FBBinaryDescriptor *binary = [FBBinaryDescriptor inflateFromJSON:binaryJSON error:&innerError];
-  if (!binary) {
-    return [[[FBControlCoreError
-      describeFormat:@"Could not build binary from json %@", binaryJSON]
-      causedBy:innerError]
-      fail:error];
-  }
-  NSArray *arguments = json[KeyArguments];
-  if (![FBCollectionInformation isArrayHeterogeneous:arguments withClass:NSString.class]) {
-    return [[FBControlCoreError describeFormat:@"%@ is not an array of strings for arguments", arguments] fail:error];
-  }
-  NSDictionary *environment = json[KeyEnvironment];
-  if (![FBCollectionInformation isDictionaryHeterogeneous:environment keyClass:NSString.class valueClass:NSString.class]) {
-    return [[FBControlCoreError describeFormat:@"%@ is not an dictionary of <string, strings> for environment", arguments] fail:error];
-  }
-  FBProcessOutputConfiguration *output = [FBProcessOutputConfiguration inflateFromJSON:json[KeyOutput] error:error];
-  if (!output) {
-    return nil;
-  }
-  return [self configurationWithBinary:binary arguments:arguments environment:environment output:output];
-}
-
-- (instancetype)initWithBinary:(FBBinaryDescriptor *)agentBinary arguments:(NSArray *)arguments environment:(NSDictionary *)environment output:(FBProcessOutputConfiguration *)output
-{
-  self = [super initWithArguments:arguments environment:environment output:output];
-  if (!self) {
-    return nil;
-  }
-
-  _agentBinary = agentBinary;
-
-  return self;
-}
-
-#pragma mark Abstract Methods
-
-- (NSString *)launchPath
-{
-  return self.agentBinary.path;
-}
-
-- (NSString *)debugDescription
-{
-  return [NSString stringWithFormat:
-    @"Agent Launch | Binary %@ | Arguments %@ | Environment %@ | Output %@",
-    self.agentBinary,
-    self.arguments,
-    self.environment,
-    self.output
-  ];
-}
-
-- (NSString *)shortDescription
-{
-  return [NSString stringWithFormat:@"Agent Launch %@", self.agentBinary.name];
-}
-
-#pragma mark NSCopying
-
-- (instancetype)copyWithZone:(NSZone *)zone
-{
-  return [[self.class alloc]
-    initWithBinary:self.agentBinary
-    arguments:self.arguments
-    environment:self.environment
-    output:self.output];
-}
-
-#pragma mark NSCoding
-
-- (instancetype)initWithCoder:(NSCoder *)coder
-{
-  self = [super initWithCoder:coder];
-  if (!self) {
-    return nil;
-  }
-
-  _agentBinary = [coder decodeObjectForKey:NSStringFromSelector(@selector(agentBinary))];
-
-  return self;
-}
-
-- (void)encodeWithCoder:(NSCoder *)coder
-{
-  [super encodeWithCoder:coder];
-
-  [coder encodeObject:self.agentBinary forKey:NSStringFromSelector(@selector(agentBinary))];
-}
-
-#pragma mark NSObject
-
-- (NSUInteger)hash
-{
-  return [super hash] | self.agentBinary.hash;
-}
-
-- (BOOL)isEqual:(FBAgentLaunchConfiguration *)object
-{
-  if (![object isKindOfClass:self.class]) {
-    return NO;
-  }
-  return [self.agentBinary isEqual:object.agentBinary] &&
-         [self.arguments isEqual:object.arguments] &&
-         [self.environment isEqual:object.environment];
-}
-
-#pragma mark FBJSONSerializable
-
-- (NSDictionary *)jsonSerializableRepresentation
-{
-  NSMutableDictionary *representation = [[super jsonSerializableRepresentation] mutableCopy];
-  representation[@"binary"] = [self.agentBinary jsonSerializableRepresentation];
-  return [representation mutableCopy];
+  return YES;
 }
 
 @end

@@ -151,6 +151,7 @@
     configurationWithApplication:application
     arguments:commandLineArguments
     environment:environment
+    waitForDebugger:NO
     output:FBProcessOutputConfiguration.defaultOutputToFile];
 
   return [[[[[[[FBTestLaunchConfiguration

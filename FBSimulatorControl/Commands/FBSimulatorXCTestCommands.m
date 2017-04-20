@@ -11,9 +11,11 @@
 
 #import <XCTestBootstrap/XCTestBootstrap.h>
 
-#import "FBSimulatorTestRunStrategy.h"
-#import "FBSimulatorError.h"
+#import "FBSimulator+Private.h"
 #import "FBSimulator.h"
+#import "FBSimulatorError.h"
+#import "FBSimulatorResourceManager.h"
+#import "FBSimulatorTestRunStrategy.h"
 
 @interface FBSimulatorXCTestCommands ()
 
@@ -39,30 +41,30 @@
   return self;
 }
 
-- (BOOL)startTestWithLaunchConfiguration:(FBTestLaunchConfiguration *)testLaunchConfiguration error:(NSError **)error
+- (nullable id<FBXCTestOperation>)startTestWithLaunchConfiguration:(FBTestLaunchConfiguration *)testLaunchConfiguration error:(NSError **)error
 {
   return [self startTestWithLaunchConfiguration:testLaunchConfiguration reporter:nil error:error];
 }
 
-- (BOOL)startTestWithLaunchConfiguration:(FBTestLaunchConfiguration *)testLaunchConfiguration reporter:(nullable id<FBTestManagerTestReporter>)reporter error:(NSError **)error
+- (nullable id<FBXCTestOperation>)startTestWithLaunchConfiguration:(FBTestLaunchConfiguration *)testLaunchConfiguration reporter:(nullable id<FBTestManagerTestReporter>)reporter error:(NSError **)error
 {
   return [self startTestWithLaunchConfiguration:testLaunchConfiguration reporter:reporter workingDirectory:self.simulator.auxillaryDirectory error:error];
 }
 
-- (BOOL)startTestWithLaunchConfiguration:(FBTestLaunchConfiguration *)testLaunchConfiguration reporter:(nullable id<FBTestManagerTestReporter>)reporter workingDirectory:(nullable NSString *)workingDirectory error:(NSError **)error
+- (nullable id<FBXCTestOperation>)startTestWithLaunchConfiguration:(FBTestLaunchConfiguration *)testLaunchConfiguration reporter:(nullable id<FBTestManagerTestReporter>)reporter workingDirectory:(nullable NSString *)workingDirectory error:(NSError **)error
 {
   return [[FBSimulatorTestRunStrategy
     strategyWithSimulator:self.simulator configuration:testLaunchConfiguration workingDirectory:workingDirectory reporter:reporter]
-    connectAndStartWithError:error] != nil;
+    connectAndStartWithError:error];
 }
 
 - (BOOL)waitUntilAllTestRunnersHaveFinishedTestingWithTimeout:(NSTimeInterval)timeout error:(NSError **)error
 {
-  FBTestManagerResult *result = [[FBSimulatorTestRunStrategy
-    strategyWithSimulator:self.simulator configuration:nil workingDirectory:nil reporter:nil]
-    waitUntilAllTestRunnersHaveFinishedTestingWithTimeout:timeout];
-  if (!result.didEndSuccessfully) {
-    return [FBSimulatorError failBoolWithError:result.error errorOut:error];
+  for (FBTestManager *testManager in self.simulator.resourceSink.testManagers.copy) {
+    FBTestManagerResult *result = [testManager waitUntilTestingHasFinishedWithTimeout:timeout];
+    if (!result.didEndSuccessfully) {
+      return NO;
+    }
   }
   return YES;
 }

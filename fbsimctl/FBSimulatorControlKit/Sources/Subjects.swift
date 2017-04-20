@@ -64,15 +64,15 @@ struct SimpleSubject : EventReporterSubject {
 
   var shortDescription: String { get {
     switch self.eventType {
-    case .Discrete:
+    case .discrete:
       return self.subject.description
     default:
-      return "\(self.eventName) \(self.eventType): \(self.subject.description)"
+      return "\(self.eventName.rawValue) \(self.eventType.rawValue): \(self.subject.description)"
     }
   }}
 
   var description: String { get {
-      return self.shortDescription
+    return self.shortDescription
   }}
 }
 
@@ -136,7 +136,7 @@ struct iOSTargetWithSubject : EventReporterSubject {
 
   var description: String { get {
     switch self.eventType {
-    case .Discrete:
+    case .discrete:
       return "\(self.targetSubject): \(self.eventName.rawValue): \(self.subject.description)"
     default:
       return ""
@@ -150,8 +150,8 @@ struct LogSubject : EventReporterSubject {
 
   var jsonDescription: JSON { get {
     return JSON.dictionary([
-      JSONKeys.EventName.rawValue : JSON.string(EventName.Log.rawValue),
-      JSONKeys.EventType.rawValue : JSON.string(EventType.Discrete.rawValue),
+      JSONKeys.EventName.rawValue : JSON.string(EventName.log.rawValue),
+      JSONKeys.EventType.rawValue : JSON.string(EventType.discrete.rawValue),
       JSONKeys.Level.rawValue : JSON.string(self.levelString),
       JSONKeys.Subject.rawValue : JSON.string(self.logString),
       JSONKeys.Timestamp.rawValue : JSON.number(NSNumber(value: round(Date().timeIntervalSince1970) as Double)),
@@ -205,6 +205,34 @@ struct StringsSubject: EventReporterSubject {
 
   var description: String { get {
     return "[\(self.strings.map({ $0.description }).joined(separator: ", "))]"
+  }}
+}
+
+extension Record : EventReporterSubject {
+  public var jsonDescription: JSON {
+    var contents: [String : JSON] = [:]
+    switch self {
+    case .start(let maybePath):
+      contents["start"] = JSON.bool(true)
+      if let path = maybePath {
+        contents["path"] = JSON.string(path)
+      } else {
+        contents["path"] = JSON.null
+      }
+    case .stop:
+      contents["start"] = JSON.bool(false)
+    }
+    return JSON.dictionary(contents)
+  }
+
+  public var description: String { get {
+    switch self {
+    case .start(let maybePath):
+      let destination = maybePath ?? "Default Destination"
+      return "Start Recording \(destination)"
+    case .stop:
+      return "Stop Recording"
+    }
   }}
 }
 

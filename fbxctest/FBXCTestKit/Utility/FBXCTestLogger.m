@@ -74,7 +74,7 @@ static NSString *const xctoolOutputLogDirectoryEnv = @"XCTOOL_TEST_ENV_FB_LOG_DI
   NSFileHandle *fileHandle = [NSFileHandle fileHandleForWritingAtPath:path];
   NSAssert(fileHandle, @"Could not create a writable file handle for file at path %@", fileHandle);
 
-  id<FBControlCoreLogger> baseLogger = [FBControlCoreLogger aslLoggerWritingToFileDescriptor:fileHandle.fileDescriptor withDebugLogging:YES];
+  id<FBControlCoreLogger> baseLogger = [FBControlCoreLogger systemLoggerWritingToFileDescriptor:fileHandle.fileDescriptor withDebugLogging:YES];
 
   return [[self alloc] initWithBaseLogger:baseLogger logDirectory:directory filePath:path fileHandle:fileHandle];
 }
@@ -183,7 +183,7 @@ static NSString *const xctoolOutputLogDirectoryEnv = @"XCTOOL_TEST_ENV_FB_LOG_DI
   NSString *fileName = [NSString stringWithFormat:@"%@.%@", uuid.UUIDString, outputKind];
   NSString *filePath = [self.logDirectory stringByAppendingPathComponent:fileName];
   NSError *error = nil;
-  FBFileWriter *writer = [FBFileWriter writerForFilePath:filePath error:&error];
+  FBFileWriter *writer = [FBFileWriter writerForFilePath:filePath blocking:NO error:&error];
   NSAssert(writer, @"Could not make side-channel writer %@", error);
 
   return [FBCompositeFileConsumer consumerWithConsumers:@[

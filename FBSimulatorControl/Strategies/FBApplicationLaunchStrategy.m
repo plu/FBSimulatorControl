@@ -30,6 +30,7 @@
 #import "FBSimulatorProcessFetcher.h"
 #import "FBSimulatorSubprocessTerminationStrategy.h"
 #import "FBProcessLaunchConfiguration+Simulator.h"
+#import "FBSimulatorLaunchCtl.h"
 
 @interface FBApplicationLaunchStrategy ()
 
@@ -284,7 +285,8 @@
   FBSimulator *simulator = self.simulator;
   NSDictionary<NSString *, id> *options = [appLaunch
     simDeviceLaunchOptionsWithStdOutPath:[self translateAbsolutePath:stdOutPath toPathRelativeTo:simulator.dataDirectory]
-    stdErrPath:[self translateAbsolutePath:stdErrPath toPathRelativeTo:simulator.dataDirectory]];
+    stdErrPath:[self translateAbsolutePath:stdErrPath toPathRelativeTo:simulator.dataDirectory]
+    waitForDebugger:appLaunch.waitForDebugger];
   return [simulator.device launchApplicationWithID:appLaunch.bundleID options:options error:error];
 }
 

@@ -27,14 +27,15 @@ public struct ListenInterface {
   let stdin: Bool
   let http: in_port_t?
   let hid: in_port_t?
+  let handle: FBTerminationHandle?
 }
 
 /**
  A Configuration for Creating an Individual Simulator.
  */
 public struct IndividualCreationConfiguration {
-  let osVersion: FBControlCoreConfiguration_OS?
-  let deviceType: FBControlCoreConfiguration_Device?
+  let os: FBOSVersionName?
+  let model: FBDeviceModel?
   let auxDirectory : String?
 }
 
@@ -56,39 +57,70 @@ public enum DiagnosticFormat : String {
 }
 
 /**
+ An Enumeration for controlling recording.
+ */
+public enum Record {
+  case start(String?)
+  case stop
+}
+
+public enum FileOutput {
+  case path(String)
+  case standardOut
+}
+
+/**
  An Interaction represents a Single, synchronous interaction with a Simulator.
  */
 public enum Action {
   case approve([String])
-  case boot(FBSimulatorBootConfiguration?)
   case clearKeychain(String?)
   case config
+  case core(FBiOSTargetAction)
   case create(CreationSpecification)
   case delete
   case diagnose(FBDiagnosticQuery, DiagnosticFormat)
   case erase
-  case hid(FBSimulatorHIDEvent)
+  case focus
   case install(String, Bool)
   case keyboardOverride
-  case launchAgent(FBAgentLaunchConfiguration)
-  case launchApp(FBApplicationLaunchConfiguration)
-  case launchXCTest(FBTestLaunchConfiguration)
   case list
   case listApps
   case listDeviceSets
   case listen(ListenInterface)
   case open(URL)
-  case record(Bool)
+  case record(Record)
   case relaunch(FBApplicationLaunchConfiguration)
   case search(FBBatchLogSearch)
   case serviceInfo(String)
   case setLocation(Double,Double)
   case shutdown
+  case stream(FileOutput?)
   case tap(Double, Double)
   case terminate(String)
   case uninstall(String)
   case upload([FBDiagnostic])
   case watchdogOverride([String], TimeInterval)
+
+  static func boot(_ configuration: FBSimulatorBootConfiguration) -> Action {
+    return self.core(configuration)
+  }
+
+  static func hid(_ event: FBSimulatorHIDEvent) -> Action {
+    return self.core(event)
+  }
+
+  static func launchApp(_ appLaunch: FBApplicationLaunchConfiguration) -> Action {
+    return self.core(appLaunch)
+  }
+
+  static func launchAgent(_ agentLaunch: FBAgentLaunchConfiguration) -> Action {
+    return self.core(agentLaunch)
+  }
+
+  static func launchXCTest(_ testLaunch: FBTestLaunchConfiguration) -> Action {
+    return self.core(testLaunch.withUITesting(true))
+  }
 }
 
 /**
@@ -156,6 +188,7 @@ extension ListenInterface : Accumulator {
     self.stdin = false
     self.http = nil
     self.hid = nil
+    self.handle = nil
   }
 
   public static var identity: ListenInterface { get {
@@ -166,9 +199,27 @@ extension ListenInterface : Accumulator {
     return ListenInterface(
       stdin: other.stdin ? other.stdin : self.stdin,
       http: other.http ?? self.http,
-      hid: other.hid ?? self.hid
+      hid: other.hid ?? self.hid,
+      handle: other.handle ?? self.handle
     )
   }
+}
+
+extension FBTerminationHandleType {
+  var listenDescription: String? { get {
+    switch self {
+      case FBTerminationHandleType.typeHandleVideoRecording:
+        return "Recording Video"
+      case FBTerminationHandleType.videoStreaming:
+        return "Streaming Video"
+      case FBTerminationHandleType.testOperation:
+        return "Test Operation"
+      case FBTerminationHandleType.actionReader:
+        return "Action Reader"
+      default:
+        return nil
+    }
+  }}
 }
 
 extension ListenInterface : EventReporterSubject {
@@ -181,15 +232,23 @@ extension ListenInterface : EventReporterSubject {
     if let portNumber = self.hid {
       hidValue = JSON.number(NSNumber(integerLiteral: Int(portNumber)))
     }
+    var handleValue = JSON.null
+    if let handle = self.handle {
+      handleValue = JSON.string(handle.type.rawValue)
+    }
 
     return JSON.dictionary([
       "stdin" : JSON.bool(self.stdin),
       "http" : httpValue,
-      "hid" : hidValue
+      "hid" : hidValue,
+      "handle" : handleValue,
     ])
   }}
 
   public var description: String { get {
+    if let listenDescription = self.listenDescription {
+      return listenDescription
+    }
     var description = "Http: "
     if let httpPort = self.http {
       description += httpPort.description
@@ -203,29 +262,42 @@ extension ListenInterface : EventReporterSubject {
       description += "No"
     }
     description += " stdin: \(self.stdin)"
+    if let handle = self.handle {
+      description += " due to \(handle.type.rawValue)"
+    }
     return description
+  }}
+
+  private var listenDescription: String? { get {
+    if !self.isEmptyListen {
+      return nil
+    }
+    return self.handle?.type.listenDescription
+  }}
+
+  var isEmptyListen: Bool { get {
+    return self.stdin == false && self.http == nil && self.hid == nil
   }}
 }
 
-
 extension IndividualCreationConfiguration : Equatable {}
 public func == (left: IndividualCreationConfiguration, right: IndividualCreationConfiguration) -> Bool {
-  return left.osVersion?.name == right.osVersion?.name &&
-         left.deviceType?.deviceName == right.deviceType?.deviceName &&
+  return left.os == right.os &&
+         left.model == right.model &&
          left.auxDirectory == right.auxDirectory
 }
 
 extension IndividualCreationConfiguration : Accumulator {
   public init() {
-    self.osVersion = nil
-    self.deviceType = nil
+    self.os = nil
+    self.model = nil
     self.auxDirectory = nil
   }
 
   public func append(_ other: IndividualCreationConfiguration) -> IndividualCreationConfiguration {
     return IndividualCreationConfiguration(
-      osVersion: other.osVersion ?? self.osVersion,
-      deviceType: other.deviceType ?? self.deviceType,
+      os: other.os ?? self.os,
+      model: other.model ?? self.model,
       auxDirectory: other.auxDirectory ?? self.auxDirectory
     )
   }
@@ -243,17 +315,41 @@ public func == (left: CreationSpecification, right: CreationSpecification) -> Bo
   }
 }
 
+extension Record : Equatable {}
+public func == (left: Record, right: Record) -> Bool {
+  switch (left, right) {
+  case (.start(let leftPath), .start(let rightPath)):
+    return leftPath == rightPath
+  case (.stop, .stop):
+    return true
+  default:
+    return false
+  }
+}
+
+extension FileOutput : Equatable {}
+public func == (left: FileOutput, right: FileOutput) -> Bool {
+  switch (left, right) {
+  case (.path(let leftPath), .path(let rightPath)):
+    return leftPath == rightPath
+  case (.standardOut, .standardOut):
+    return true
+  default:
+    return false
+  }
+}
+
 extension Action : Equatable { }
 public func == (left: Action, right: Action) -> Bool {
   switch (left, right) {
   case (.approve(let leftBundleIDs), .approve(let rightBundleIDs)):
     return leftBundleIDs == rightBundleIDs
-  case (.boot(let leftConfiguration), .boot(let rightConfiguration)):
-    return leftConfiguration == rightConfiguration
   case (.clearKeychain(let leftBundleID), .clearKeychain(let rightBundleID)):
     return leftBundleID == rightBundleID
   case (.config, .config):
     return true
+  case (.core(let leftAction), .core(let rightAction)):
+    return leftAction.isEqual(rightAction)
   case (.create(let leftSpecification), .create(let rightSpecification)):
     return leftSpecification == rightSpecification
   case (.delete, .delete):
@@ -262,18 +358,12 @@ public func == (left: Action, right: Action) -> Bool {
     return leftQuery == rightQuery && leftFormat == rightFormat
   case (.erase, .erase):
     return true
-  case (.hid(let leftEvent), .hid(let rightEvent)):
-    return leftEvent == rightEvent
+  case (.focus, .focus):
+    return true
   case (.install(let leftApp, let leftSign), .install(let rightApp, let rightSign)):
     return leftApp == rightApp && leftSign == rightSign
   case (.keyboardOverride, .keyboardOverride):
     return true
-  case (.launchAgent(let leftLaunch), .launchAgent(let rightLaunch)):
-    return leftLaunch == rightLaunch
-  case (.launchApp(let leftLaunch), .launchApp(let rightLaunch)):
-    return leftLaunch == rightLaunch
-  case (.launchXCTest(let leftConfiguration), .launchXCTest(let rightConfiguration)):
-    return leftConfiguration == rightConfiguration
   case (.list, .list):
     return true
   case (.listApps, .listApps):
@@ -296,6 +386,8 @@ public func == (left: Action, right: Action) -> Bool {
     return leftLat == rightLat && leftLon == rightLon
   case (.shutdown, .shutdown):
     return true
+  case (.stream(let leftInfo), .stream(let rightInfo)):
+    return leftInfo == rightInfo
   case (.tap(let leftX, let leftY), .tap(let rightX, let rightY)):
     return leftX == rightX && leftY == rightY
   case (.terminate(let leftBundleID), .terminate(let rightBundleID)):
@@ -315,65 +407,61 @@ extension Action {
   public var reportable: (EventName, EventReporterSubject?) { get {
     switch self {
     case .approve(let bundleIDs):
-      return (EventName.Approve, StringsSubject(bundleIDs))
-    case .boot:
-      return (EventName.Boot, nil)
+      return (.approve, StringsSubject(bundleIDs))
     case .clearKeychain(let bundleID):
-      return (EventName.ClearKeychain, bundleID)
+      return (.clearKeychain, bundleID)
     case .config:
-      return (EventName.Config, nil)
+      return (.config, nil)
+    case .core(let action):
+      return (action.eventName, ControlCoreSubject(action as! ControlCoreValue))
     case .create:
-      return (EventName.Create, nil)
+      return (.create, nil)
     case .delete:
-      return (EventName.Delete, nil)
+      return (.delete, nil)
     case .diagnose(let query, _):
-      return (EventName.Diagnose, ControlCoreSubject(query))
+      return (.diagnose, ControlCoreSubject(query))
     case .erase:
-      return (EventName.Erase, nil)
-    case .hid(let event):
-      return (EventName.Hid, ControlCoreSubject(event))
+      return (.erase, nil)
+    case .focus:
+      return (.focus, nil)
     case .install:
-      return (EventName.Install, nil)
+      return (.install, nil)
     case .keyboardOverride:
-      return (EventName.KeyboardOverride, nil)
-    case .launchAgent(let launch):
-      return (EventName.Launch, ControlCoreSubject(launch))
-    case .launchApp(let launch):
-      return (EventName.Launch, ControlCoreSubject(launch))
-    case .launchXCTest(let configuration):
-        return (EventName.LaunchXCTest, ControlCoreSubject(configuration))
+      return (.keyboardOverride, nil)
     case .list:
-        return (EventName.List, nil)
+        return (.list, nil)
     case .listApps:
-      return (EventName.ListApps, nil)
+      return (.listApps, nil)
     case .listDeviceSets:
-      return (EventName.ListDeviceSets, nil)
+      return (.listDeviceSets, nil)
     case .listen:
-      return (EventName.Listen, nil)
+      return (.listen, nil)
     case .open(let url):
-      return (EventName.Open, url.absoluteString)
-    case .record(let start):
-      return (EventName.Record, start)
+      return (.open, url.absoluteString)
+    case .record(let record):
+      return (.record, record)
     case .relaunch(let appLaunch):
-      return (EventName.Relaunch, ControlCoreSubject(appLaunch))
+      return (.relaunch, ControlCoreSubject(appLaunch))
     case .search(let search):
-      return (EventName.Search, ControlCoreSubject(search))
+      return (.search, ControlCoreSubject(search))
     case .serviceInfo:
-      return (EventName.ServiceInfo, nil)
+      return (.serviceInfo, nil)
     case .setLocation:
-      return (EventName.SetLocation, nil)
+      return (.setLocation, nil)
     case .shutdown:
-      return (EventName.Shutdown, nil)
+      return (.shutdown, nil)
+    case .stream:
+      return (.stream, nil)
     case .tap:
-      return (EventName.Tap, nil)
+      return (.tap, nil)
     case .terminate(let bundleID):
-      return (EventName.Terminate, bundleID)
+      return (.terminate, bundleID)
     case .uninstall(let bundleID):
-      return (EventName.Uninstall, bundleID)
+      return (.uninstall, bundleID)
     case .upload:
-      return (EventName.Diagnose, nil)
+      return (.diagnose, nil)
     case .watchdogOverride(let bundleIDs, _):
-      return (EventName.WatchdogOverride, StringsSubject(bundleIDs))
+      return (.watchdogOverride, StringsSubject(bundleIDs))
     }
   }}
 }

@@ -36,7 +36,7 @@
   }
 
   _consumer = consumer;
-  _writer = [FBFileWriter writerWithFileHandle:fileHandle];
+  _writer = [FBFileWriter writerWithFileHandle:fileHandle blocking:NO];
   _reader = [FBFileReader readerWithFileHandle:fileHandle consumer:self];
   _completionQueue = completionQueue;
   _completionHandler = completionHandler;
@@ -54,13 +54,11 @@
   return YES;
 }
 
+#pragma mark FBFileConsumer Implementation
+
 - (void)consumeData:(NSData *)data
 {
-  NSData *writeBack = [self.consumer consumeData:data];
-  if (!writeBack) {
-    return;
-  }
-  [self.writer consumeData:writeBack];
+  [self.consumer consumeData:data writeBack:self.writer];
 }
 
 - (void)consumeEndOfFile

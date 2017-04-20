@@ -95,11 +95,16 @@ static NSString *const RecordVideoEnvKey = @"FBSIMULATORCONTROL_RECORD_VIDEO";
   return options;
 }
 
-+ (FBFramebufferConfiguration *)defaultFramebufferConfiguration
++ (FBVideoEncoderConfiguration *)defaultEncoderConfiguration
 {
   return [NSProcessInfo.processInfo.environment[RecordVideoEnvKey] boolValue]
-    ? [FBFramebufferConfiguration withVideoOptions:FBFramebufferConfiguration.defaultConfiguration.videoOptions | FBFramebufferVideoOptionsAutorecord]
-    : nil;
+    ? [FBVideoEncoderConfiguration withOptions:FBVideoEncoderConfiguration.defaultConfiguration.options | FBVideoEncoderOptionsAutorecord]
+    : [FBVideoEncoderConfiguration defaultConfiguration];
+}
+
++ (FBFramebufferConfiguration *)defaultFramebufferConfiguration
+{
+  return [FBFramebufferConfiguration.defaultConfiguration withEncoder:self.defaultEncoderConfiguration];
 }
 
 + (NSString *)defaultDeviceSetPath
@@ -125,7 +130,7 @@ static NSString *const RecordVideoEnvKey = @"FBSIMULATORCONTROL_RECORD_VIDEO";
   self.continueAfterFailure = NO;
   self.managementOptions = FBSimulatorManagementOptionsKillSpuriousSimulatorsOnFirstStart | FBSimulatorManagementOptionsIgnoreSpuriousKillFail;
   self.allocationOptions = FBSimulatorAllocationOptionsReuse | FBSimulatorAllocationOptionsCreate | FBSimulatorAllocationOptionsEraseOnAllocate;
-  self.simulatorConfiguration = FBSimulatorConfiguration.iPhone5;
+  self.simulatorConfiguration = [FBSimulatorConfiguration withDeviceModel:FBDeviceModeliPhone5];
   self.simulatorLaunchConfiguration = FBSimulatorControlTestCase.defaultLaunchConfiguration;
   self.deviceSetPath = FBSimulatorControlTestCase.defaultDeviceSetPath;
 }

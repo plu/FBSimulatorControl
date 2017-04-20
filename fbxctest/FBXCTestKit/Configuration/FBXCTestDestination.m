@@ -33,7 +33,7 @@
 
 @implementation FBXCTestDestinationiPhoneSimulator
 
-- (instancetype)initWithDevice:(nullable id<FBControlCoreConfiguration_Device>)device version:(nullable id<FBControlCoreConfiguration_OS>)version
+- (instancetype)initWithDevice:(nullable FBDeviceType *)device version:(nullable FBOSVersion *)version
 {
   self = [super init];
   if (!self) {
@@ -49,10 +49,10 @@
 {
   FBSimulatorConfiguration *configuration = [FBSimulatorConfiguration defaultConfiguration];
   if (self.device) {
-    configuration = [configuration withDevice:self.device];
+    configuration = [configuration withDeviceModel:self.device.model];
   }
   if (self.version) {
-    configuration = [configuration withOS:self.version];
+    configuration = [configuration withOSNamed:self.version.name];
   }
   return configuration;
 }

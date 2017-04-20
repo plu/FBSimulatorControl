@@ -11,8 +11,9 @@
 
 #import <FBControlCore/FBControlCore.h>
 
-@class FBSimulator;
 @class FBApplicationLaunchConfiguration;
+@class FBSimulator;
+@class FBTestBundle;
 @class FBTestLaunchConfiguration;
 @protocol FBTestManagerTestReporter;
 
@@ -28,9 +29,10 @@ NS_ASSUME_NONNULL_BEGIN
 
  @param testLaunchConfiguration configuration used to launch test.
  @param reporter the reporter to report to.
- @return the reciever, for chaining.
+ @param error an error out for any error that occurs.
+ @return a Test Operation if successful, nil otherwise.
  */
-- (BOOL)startTestWithLaunchConfiguration:(FBTestLaunchConfiguration *)testLaunchConfiguration reporter:(nullable id<FBTestManagerTestReporter>)reporter error:(NSError **)error;
+- (nullable id<FBXCTestOperation>)startTestWithLaunchConfiguration:(FBTestLaunchConfiguration *)testLaunchConfiguration reporter:(nullable id<FBTestManagerTestReporter>)reporter error:(NSError **)error;
 
 /**
  Starts testing application using test bundle.
@@ -38,9 +40,10 @@ NS_ASSUME_NONNULL_BEGIN
  @param testLaunchConfiguration configuration used to launch test.
  @param reporter the reporter to report to.
  @param workingDirectory xctest working directory.
- @return the reciever, for chaining.
+ @param error an error out for any error that occurs.
+ @return a Test Operation if successful, nil otherwise.
  */
-- (BOOL)startTestWithLaunchConfiguration:(FBTestLaunchConfiguration *)testLaunchConfiguration reporter:(nullable id<FBTestManagerTestReporter>)reporter workingDirectory:(nullable NSString *)workingDirectory error:(NSError **)error;
+- (nullable id<FBXCTestOperation>)startTestWithLaunchConfiguration:(FBTestLaunchConfiguration *)testLaunchConfiguration reporter:(nullable id<FBTestManagerTestReporter>)reporter workingDirectory:(nullable NSString *)workingDirectory error:(NSError **)error;
 
 @end
 

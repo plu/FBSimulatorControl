@@ -24,13 +24,30 @@
 {
   NSArray *values = @[
     [FBiOSTargetFormat formatWithFields:@[FBiOSTargetFormatName, FBiOSTargetFormatUDID, FBiOSTargetFormatState]],
-    [FBiOSTargetFormat formatWithFields:@[FBiOSTargetFormatName, FBiOSTargetFormatUDID, FBiOSTargetFormatOSVersion, FBiOSTargetFormatDeviceName]],
+    [FBiOSTargetFormat formatWithFields:@[FBiOSTargetFormatName, FBiOSTargetFormatUDID, FBiOSTargetFormatOSVersion, FBiOSTargetFormatModel]],
     [FBiOSTargetFormat formatWithFields:@[]],
   ];
   [self assertEqualityOfCopy:values];
   [self assertUnarchiving:values];
   [self assertJSONSerialization:values];
   [self assertJSONDeserialization:values];
+}
+
+- (void)testCorrectFormatStrings
+{
+  NSDictionary<NSString *, NSArray<FBiOSTargetFormatKey> *> *inputs = @{
+    @"%n%o" : @[FBiOSTargetFormatName, FBiOSTargetFormatOSVersion],
+    @"%a%m" : @[FBiOSTargetFormatArchitecture, FBiOSTargetFormatModel],
+  };
+
+  for (NSString *input in inputs.allKeys) {
+    NSArray<FBiOSTargetFormatKey> *expected = inputs[input];
+    NSError *error = nil;
+    FBiOSTargetFormat *format = [FBiOSTargetFormat formatWithString:input error:&error];
+    XCTAssertNil(error);
+    XCTAssertNotNil(format);
+    XCTAssertEqualObjects(format.fields, expected);
+  }
 }
 
 @end

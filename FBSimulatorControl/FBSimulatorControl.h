@@ -9,17 +9,18 @@
 
 #import <FBSimulatorControl/FBAddVideoPolyfill.h>
 #import <FBSimulatorControl/FBAgentLaunchStrategy.h>
+#import <FBSimulatorControl/FBAgentLaunchConfiguration+Simulator.h>
 #import <FBSimulatorControl/FBApplicationLaunchStrategy.h>
 #import <FBSimulatorControl/FBCompositeSimulatorEventSink.h>
 #import <FBSimulatorControl/FBCoreSimulatorNotifier.h>
 #import <FBSimulatorControl/FBCoreSimulatorTerminationStrategy.h>
 #import <FBSimulatorControl/FBDefaultsModificationStrategy.h>
 #import <FBSimulatorControl/FBFramebuffer.h>
+#import <FBSimulatorControl/FBSimulatorBitmapStream.h>
 #import <FBSimulatorControl/FBFramebufferConfiguration.h>
-#import <FBSimulatorControl/FBFramebufferDebugWindow.h>
-#import <FBSimulatorControl/FBFramebufferFrameSink.h>
-#import <FBSimulatorControl/FBFramebufferImage.h>
-#import <FBSimulatorControl/FBFramebufferVideo.h>
+#import <FBSimulatorControl/FBSimulatorImage.h>
+#import <FBSimulatorControl/FBFramebufferSurface.h>
+#import <FBSimulatorControl/FBSimulatorVideo.h>
 #import <FBSimulatorControl/FBMutableSimulatorEventSink.h>
 #import <FBSimulatorControl/FBProcessLaunchConfiguration+Simulator.h>
 #import <FBSimulatorControl/FBSimulator+Connection.h>
@@ -73,3 +74,6 @@
 #import <FBSimulatorControl/FBSimulatorXCTestCommands.h>
 #import <FBSimulatorControl/FBSurfaceImageGenerator.h>
 #import <FBSimulatorControl/FBUploadMediaStrategy.h>
+#import <FBSimulatorControl/FBVideoEncoderBuiltIn.h>
+#import <FBSimulatorControl/FBVideoEncoderConfiguration.h>
+#import <FBSimulatorControl/FBVideoEncoderSimulatorKit.h>

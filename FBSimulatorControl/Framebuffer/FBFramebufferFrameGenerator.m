@@ -14,12 +14,22 @@
 
 #import <FBControlCore/FBControlCore.h>
 
+#import <SimulatorKit/SimDeviceFramebufferService.h>
+#import <SimulatorKit/SimDeviceFramebufferService+Removed.h>
 #import <SimulatorKit/SimDeviceFramebufferBackingStore+Removed.h>
 
 #import "FBFramebufferFrame.h"
-#import "FBFramebufferFrameSink.h"
-#import "FBFramebufferSurfaceClient.h"
 #import "FBSurfaceImageGenerator.h"
+
+/**
+ Enumeration to keep track of internal state.
+ */
+typedef NS_ENUM(NSUInteger, FBFramebufferServiceState) {
+  FBFramebufferServiceStateNotStarted = 0, /** Before the framebuffer is 'listening'. */
+  FBFramebufferServiceStateStarting = 1, /** After the framebuffer has started, but before the first frame. */
+  FBFramebufferServiceStateRunning = 2, /** After the framebuffer has started, but before the first frame. */
+  FBFramebufferServiceStateTerminated = 3, /** After the framebuffer has terminated. */
+};
 
 static const NSInteger FBFramebufferLogFrameFrequency = 100;
 // Timescale is in nanoseconds
@@ -27,16 +37,31 @@ static const CMTimeScale FBSimulatorFramebufferTimescale = 10E8;
 static const CMTimeRoundingMethod FBSimulatorFramebufferRoundingMethod = kCMTimeRoundingMethod_Default;
 static const uint64_t FBSimulatorFramebufferFrameTimeInterval = NSEC_PER_MSEC * 20;
 
-@interface FBFramebufferFrameGenerator ()
+@interface FBFramebufferFrameGenerator () <FBFramebufferFrameSink>
 
-@property (nonatomic, weak, readonly) FBFramebuffer *framebuffer;
 @property (nonatomic, copy, readonly) NSDecimalNumber *scale;
 @property (nonatomic, strong, readonly) dispatch_queue_t queue;
 @property (nonatomic, strong, readonly) id<FBControlCoreLogger> logger;
+@property (nonatomic, strong, readonly) NSMutableArray<id<FBFramebufferFrameSink>> *attachedSinks;
 
+@property (atomic, assign, readwrite) FBFramebufferServiceState state;
 @property (atomic, assign, readwrite) CMTimebaseRef timebase;
 @property (atomic, assign, readwrite) NSUInteger frameCount;
 @property (atomic, assign, readwrite) CGSize size;
+
+@end
+
+@interface FBFramebufferBackingStoreFrameGenerator ()
+
+@property (nonatomic, strong, readonly) SimDeviceFramebufferService *service;
+
+@end
+
+@interface FBFramebufferIOSurfaceFrameGenerator ()
+
+@property (nonatomic, strong, readonly) FBFramebufferSurface *surface;
+@property (nonatomic, strong, readonly) FBSurfaceImageGenerator *imageGenerator;
+@property (nonatomic, strong, readonly) dispatch_source_t timerSource;
 
 @end
 
@@ -44,24 +69,18 @@ static const uint64_t FBSimulatorFramebufferFrameTimeInterval = NSEC_PER_MSEC * 
 
 #pragma mark Initializers
 
-+ (instancetype)generatorWithFramebuffer:(FBFramebuffer *)framebuffer scale:(NSDecimalNumber *)scale sink:(id<FBFramebufferFrameSink>)sink queue:(dispatch_queue_t)queue logger:(id<FBControlCoreLogger>)logger;
-{
-  return [[self alloc] initWithFramebuffer:framebuffer scale:scale sink:sink queue:queue logger:logger];
-}
-
-- (instancetype)initWithFramebuffer:(FBFramebuffer *)framebuffer scale:(NSDecimalNumber *)scale sink:(id<FBFramebufferFrameSink>)sink queue:(dispatch_queue_t)queue logger:(id<FBControlCoreLogger>)logger
+- (instancetype)initWithScale:(NSDecimalNumber *)scale queue:(dispatch_queue_t)queue logger:(id<FBControlCoreLogger>)logger
 {
   self = [super init];
   if (!self) {
     return nil;
   }
 
-  _framebuffer = framebuffer;
   _scale = scale;
-  _sink = sink;
   _queue = queue;
   _logger = logger;
 
+  _state = FBFramebufferServiceStateNotStarted;
   _frameCount = 0;
   _size = CGSizeZero;
 
@@ -90,17 +109,56 @@ static const uint64_t FBSimulatorFramebufferFrameTimeInterval = NSEC_PER_MSEC * 
 
 #pragma mark Public Methods
 
-- (void)frameSteamEnded
+- (void)attachSink:(id<FBFramebufferFrameSink>)sink
 {
   dispatch_async(self.queue, ^{
-    if (self.timebase) {
-      CFRelease(self.timebase);
-      self.timebase = nil;
+    // Don't attach sinks if we're invalid
+    if (self.state == FBFramebufferServiceStateTerminated) {
+      return;
+    }
+    // Attach the Sink
+    [self.attachedSinks addObject:sink];
+    // The first Sink applies backpressure, start the consumption.
+    if (self.attachedSinks.count && self.state == FBFramebufferServiceStateNotStarted) {
+      [self firstConsumerAttached];
     }
   });
 }
 
+- (void)detachSink:(id<FBFramebufferFrameSink>)sink
+{
+  dispatch_async(self.queue, ^{
+    [self.attachedSinks removeObject:sink];
+  });
+}
+
+- (void)teardownWithGroup:(dispatch_group_t)teardownGroup
+{
+  dispatch_group_async(teardownGroup, self.queue, ^{
+    if (self.state == FBFramebufferServiceStateTerminated) {
+      return;
+    }
+    [self detachAllConsumers:teardownGroup];
+  });
+}
+
 #pragma mark Private
+
+- (void)firstConsumerAttached
+{
+  self.state = FBFramebufferServiceStateStarting;
+}
+
+- (void)detachAllConsumers:(dispatch_group_t)teardownGroup
+{
+  if (self.timebase) {
+    CFRelease(self.timebase);
+    self.timebase = nil;
+  }
+  [self frameGenerator:self didBecomeInvalidWithError:nil teardownGroup:teardownGroup];
+  [self.attachedSinks removeAllObjects];
+  self.state = FBFramebufferServiceStateTerminated;
+}
 
 - (void)startTimebaseNow
 {
@@ -124,7 +182,7 @@ static const uint64_t FBSimulatorFramebufferFrameTimeInterval = NSEC_PER_MSEC * 
 
   // Create the Frame and pass it to the sink
   FBFramebufferFrame *frame = [self frameFromCurrentTime:image size:size];
-  [self.sink framebuffer:self.framebuffer didUpdate:frame];
+  [self frameGenerator:self didUpdate:frame];
 
   // Log and increment.
   if (self.frameCount == 0) {
@@ -142,9 +200,92 @@ static const uint64_t FBSimulatorFramebufferFrameTimeInterval = NSEC_PER_MSEC * 
   return [[FBFramebufferFrame alloc] initWithTime:time timebase:self.timebase image:image count:self.frameCount size:size];
 }
 
+#pragma mark Forwarding to Sinks
+
+- (void)frameGenerator:(FBFramebufferFrameGenerator *)frameGenerator didUpdate:(FBFramebufferFrame *)frame
+{
+  @synchronized (self.attachedSinks)
+  {
+    for (id<FBFramebufferFrameSink> sink in self.attachedSinks) {
+      [sink frameGenerator:frameGenerator didUpdate:frame];
+    }
+  }
+}
+
+- (void)frameGenerator:(FBFramebufferFrameGenerator *)frameGenerator didBecomeInvalidWithError:(NSError *)error teardownGroup:(dispatch_group_t)teardownGroup
+{
+  @synchronized (self.attachedSinks)
+  {
+    for (id<FBFramebufferFrameSink> sink in self.attachedSinks) {
+      [sink frameGenerator:frameGenerator didBecomeInvalidWithError:error teardownGroup:teardownGroup];
+    }
+  }
+}
+
+#pragma mark Private
+
++ (NSString *)stringFromFramebufferState:(FBFramebufferServiceState)state
+{
+  switch (state) {
+    case FBFramebufferServiceStateNotStarted:
+      return @"Not Started";
+    case FBFramebufferServiceStateStarting:
+      return @"Starting";
+    case FBFramebufferServiceStateRunning:
+      return @"Running";
+    case FBFramebufferServiceStateTerminated:
+      return @"Terminated";
+    default:
+      return @"Unknown";
+  }
+}
+
 @end
 
 @implementation FBFramebufferBackingStoreFrameGenerator
+
+#pragma mark Initializers
+
++ (instancetype)generatorWithFramebufferService:(SimDeviceFramebufferService *)service scale:(NSDecimalNumber *)scale queue:(dispatch_queue_t)queue logger:(id<FBControlCoreLogger>)logger
+{
+  return [[self alloc] initWithFramebufferService:service scale:scale queue:queue logger:logger];
+}
+
+- (instancetype)initWithFramebufferService:(SimDeviceFramebufferService *)service scale:(NSDecimalNumber *)scale queue:(dispatch_queue_t)queue logger:(id<FBControlCoreLogger>)logger
+{
+  self = [super initWithScale:scale queue:queue logger:logger];
+  if (!self) {
+    return nil;
+  }
+
+  _service = service;
+
+  return self;
+}
+
+#pragma mark Client Callbacks from SimDeviceFramebufferService
+
+- (void)framebufferService:(SimDeviceFramebufferService *)service didUpdateRegion:(CGRect)region ofBackingStore:(SimDeviceFramebufferBackingStore *)backingStore
+{
+  // We recieve the backing store on the first surface.
+  if (self.state == FBFramebufferServiceStateStarting) {
+    self.state = FBFramebufferServiceStateRunning;
+    [self firstFrameWithBackingStore:backingStore];
+  } else if (self.state == FBFramebufferServiceStateRunning) {
+    [self backingStoreDidUpdate:backingStore];
+  }
+}
+
+- (void)framebufferService:(SimDeviceFramebufferService *)service didRotateToAngle:(double)angle
+{
+
+}
+
+- (void)framebufferService:(SimDeviceFramebufferService *)service didFailWithError:(NSError *)error
+{
+  dispatch_group_t group = dispatch_group_create();
+  [self teardownWithGroup:group];
+}
 
 #pragma mark Public Methods
 
@@ -161,6 +302,17 @@ static const uint64_t FBSimulatorFramebufferFrameTimeInterval = NSEC_PER_MSEC * 
 
 #pragma mark Private
 
+- (void)firstConsumerAttached
+{
+  [self.service registerClient:self onQueue:self.queue];
+  [self.service resume];
+}
+
+- (void)detachAllConsumers:(dispatch_group_t)teardownGroup
+{
+  [self.service suspend];
+}
+
 - (void)pushNewFrameFromCurrentTimeWithBackingStore:(SimDeviceFramebufferBackingStore *)backingStore
 {
   CGSize size = NSMakeSize(backingStore.pixelsWide, backingStore.pixelsHigh);
@@ -170,23 +322,23 @@ static const uint64_t FBSimulatorFramebufferFrameTimeInterval = NSEC_PER_MSEC * 
 
 @end
 
-@interface FBFramebufferIOSurfaceFrameGenerator ()
-
-@property (nonatomic, strong, readonly) dispatch_source_t timerSource;
-@property (nonatomic, strong, readonly) FBSurfaceImageGenerator *imageGenerator;
-
-@end
-
 @implementation FBFramebufferIOSurfaceFrameGenerator
 
-#pragma mark Lifecycle
+#pragma mark Initializers
 
-- (instancetype)initWithFramebuffer:(FBFramebuffer *)framebuffer scale:(NSDecimalNumber *)scale sink:(id<FBFramebufferFrameSink>)sink queue:(dispatch_queue_t)queue logger:(id<FBControlCoreLogger>)logger
++ (instancetype)generatorWithRenderable:(FBFramebufferSurface *)surface scale:(NSDecimalNumber *)scale queue:(dispatch_queue_t)queue logger:(id<FBControlCoreLogger>)logger
 {
-  self = [super initWithFramebuffer:framebuffer scale:scale sink:sink queue:queue logger:logger];
+  return [[self alloc] initWithRenderable:surface scale:scale queue:queue logger:logger];
+}
+
+- (instancetype)initWithRenderable:(FBFramebufferSurface *)surface scale:(NSDecimalNumber *)scale queue:(dispatch_queue_t)queue logger:(id<FBControlCoreLogger>)logger
+{
+  self = [super initWithScale:scale queue:queue logger:logger];
   if (!self) {
     return nil;
   }
+
+  _surface = surface;
 
   // Only rescale if the original scale is different to 1.
   _timerSource = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, self.queue);
@@ -201,32 +353,55 @@ static const uint64_t FBSimulatorFramebufferFrameTimeInterval = NSEC_PER_MSEC * 
   return self;
 }
 
-#pragma mark Public
+#pragma mark FBFramebufferSurfaceConsumer
 
-- (void)currentSurfaceChanged:(nullable IOSurfaceRef)surface
+- (void)didChangeIOSurface:(nullable IOSurfaceRef)surface
 {
-  [self.imageGenerator currentSurfaceChanged:surface];
-  if (surface == NULL) {
-    dispatch_suspend(self.timerSource);
-  } else {
+  [self.imageGenerator didChangeIOSurface:surface];
+  dispatch_source_t timerSource = self.timerSource;
+  if (surface == NULL && timerSource != nil) {
+    dispatch_suspend(timerSource);
+  } else if (timerSource != nil) {
     [self startTimebaseNow];
     [self pushNewFrameFromCurrentTime];
-    dispatch_resume(self.timerSource);
+    dispatch_resume(timerSource);
   }
 }
 
-- (void)frameSteamEnded
+- (void)didReceiveDamageRect:(CGRect)rect
 {
+  [self.imageGenerator didReceiveDamageRect:rect];
+}
+
+- (NSString *)consumerIdentifier
+{
+  return NSStringFromClass(self.class);
+}
+
+#pragma mark Private
+
+- (void)firstConsumerAttached
+{
+  [super firstConsumerAttached];
+
+  // Start Consuming
+  [self.surface attachConsumer:self];
+}
+
+- (void)detachAllConsumers:(dispatch_group_t)teardownGroup
+{
+  [super detachAllConsumers:teardownGroup];
+
+  // Stop Consuming
+  [self.surface detachConsumer:self];
+
+  // Tear down the rest
   if (self.timerSource) {
     dispatch_source_cancel(self.timerSource);
     _timerSource = nil;
   }
-  [self currentSurfaceChanged:nil];
-
-  [super frameSteamEnded];
+  [self didChangeIOSurface:nil];
 }
-
-#pragma mark Private
 
 - (void)pushNewFrameFromCurrentTime
 {

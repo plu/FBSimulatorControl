@@ -17,14 +17,27 @@
 
 FBiOSTargetFormatKey const FBiOSTargetFormatUDID = @"udid";
 FBiOSTargetFormatKey const FBiOSTargetFormatName = @"name";
-FBiOSTargetFormatKey const FBiOSTargetFormatDeviceName = @"device-name";
+FBiOSTargetFormatKey const FBiOSTargetFormatModel = @"model";
 FBiOSTargetFormatKey const FBiOSTargetFormatOSVersion = @"os";
 FBiOSTargetFormatKey const FBiOSTargetFormatState = @"state";
 FBiOSTargetFormatKey const FBiOSTargetFormatArchitecture = @"arch";
 FBiOSTargetFormatKey const FBiOSTargetFormatProcessIdentifier = @"pid";
-FBiOSTargetFormatKey const FBiOSTargetFormatContainerApplicationProcessIdentifier = @"container_pid";
+FBiOSTargetFormatKey const FBiOSTargetFormatContainerApplicationProcessIdentifier = @"container-pid";
 
 @implementation FBiOSTargetFormat
+
++ (NSDictionary<NSString *, FBiOSTargetFormatKey> *)formatMapping
+{
+  return @{
+    @"a" : FBiOSTargetFormatArchitecture,
+    @"m" : FBiOSTargetFormatModel,
+    @"n" : FBiOSTargetFormatName,
+    @"o" : FBiOSTargetFormatOSVersion,
+    @"p" : FBiOSTargetFormatProcessIdentifier,
+    @"s" : FBiOSTargetFormatState,
+    @"u" : FBiOSTargetFormatUDID,
+  };
+}
 
 #pragma mark Initializers
 
@@ -32,6 +45,26 @@ FBiOSTargetFormatKey const FBiOSTargetFormatContainerApplicationProcessIdentifie
 {
   NSParameterAssert([FBCollectionInformation isArrayHeterogeneous:fields withClass:NSString.class]);
   return [[self alloc] initWithFields:fields];
+}
+
++ (nullable instancetype)formatWithString:(NSString *)string error:(NSError **)error
+{
+  NSArray<NSString *> *components = [string componentsSeparatedByCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"%@"]];
+  NSDictionary<NSString *, FBiOSTargetFormatKey> *mapping = [self formatMapping];
+  NSMutableArray<FBiOSTargetFormatKey> *keys = [NSMutableArray array];
+  for (NSString *component in components) {
+    if (component.length == 0) {
+      continue;
+    }
+    FBiOSTargetFormatKey key = mapping[component];
+    if (!key) {
+      return [[FBControlCoreError
+        describeFormat:@"%@ is not a valid format in %@", component, [FBCollectionInformation oneLineDescriptionFromArray:mapping.allKeys]]
+        fail:error];
+    }
+    [keys addObject:key];
+  }
+  return [self formatWithFields:[keys copy]];
 }
 
 + (instancetype)defaultFormat
@@ -43,8 +76,9 @@ FBiOSTargetFormatKey const FBiOSTargetFormatContainerApplicationProcessIdentifie
       FBiOSTargetFormatUDID,
       FBiOSTargetFormatName,
       FBiOSTargetFormatState,
-      FBiOSTargetFormatDeviceName,
+      FBiOSTargetFormatModel,
       FBiOSTargetFormatOSVersion,
+      FBiOSTargetFormatArchitecture,
     ]];
   });
   return format;
@@ -59,7 +93,7 @@ FBiOSTargetFormatKey const FBiOSTargetFormatContainerApplicationProcessIdentifie
       FBiOSTargetFormatUDID,
       FBiOSTargetFormatName,
       FBiOSTargetFormatState,
-      FBiOSTargetFormatDeviceName,
+      FBiOSTargetFormatModel,
       FBiOSTargetFormatOSVersion,
       FBiOSTargetFormatArchitecture,
       FBiOSTargetFormatProcessIdentifier,
@@ -191,10 +225,10 @@ FBiOSTargetFormatKey const FBiOSTargetFormatContainerApplicationProcessIdentifie
     return target.udid;
   } else if ([field isEqualToString:FBiOSTargetFormatName]) {
     return target.name;
-  } else if ([field isEqualToString:FBiOSTargetFormatDeviceName]) {
-    return target.deviceConfiguration.deviceName;
+  } else if ([field isEqualToString:FBiOSTargetFormatModel]) {
+    return target.deviceType.model;
   } else if ([field isEqualToString:FBiOSTargetFormatOSVersion]) {
-    return target.osConfiguration.name;
+    return target.osVersion.name;
   } else if ([field isEqualToString:FBiOSTargetFormatState]) {
     return FBSimulatorStateStringFromState(target.state);
   } else if ([field isEqualToString:FBiOSTargetFormatArchitecture]) {

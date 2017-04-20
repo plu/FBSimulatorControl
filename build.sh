@@ -36,16 +36,24 @@ function assert_has_carthage() {
 }
 
 function build_fbsimctl_deps() {
-  assert_xcode_version 8
-  assert_has_carthage
-  pushd fbsimctl
-  carthage bootstrap --platform Mac
-  popd
+  if [ -z "$CUSTOM_FBSIMCTL_DEPS_SCRIPT" ]; then
+    assert_xcode_version 8
+    assert_has_carthage
+    pushd fbsimctl
+    carthage bootstrap --platform Mac
+    popd
+  else
+    "$CUSTOM_FBSIMCTL_DEPS_SCRIPT"
+  fi
 }
 
 function build_test_deps() {
-  assert_has_carthage
-  carthage bootstrap --platform Mac
+  if [ -z "$CUSTOM_TEST_DEPS_SCRIPT" ]; then
+    assert_has_carthage
+    carthage bootstrap --platform Mac
+  else
+    "$CUSTOM_TEST_DEPS_SCRIPT"
+  fi
 }
 
 function framework_build() {
@@ -205,7 +213,8 @@ function cli_framework_test() {
 function cli_e2e_test() {
   NAME=$1
   pushd $NAME/cli-tests
-  ./tests.py
+  py=$(which python3.6 || which python3 || which python)
+  $py ./tests.py
   popd
 }
 

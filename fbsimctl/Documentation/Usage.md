@@ -12,6 +12,7 @@ These are flags and options that are provided to the `fbsimctl` process that def
 
 - `--debug-logging` increases the verbosity of logging output. This can be helpful when you want to figure out what is going on when things go wrong.
 - `--json` outputs linewise JSON to `stdout` instead of Human-Readable events to `stdout` and logging to `stderr`. 
+- `--format=` Can be used to change how Simulators & Devices are reported when `--json` is not passed. For example `--format=%m%p` will print just the Device Model, followed by the OS Version.
 - `--set /path/to/device-set` Will point `fbsimctl` at an alternative Simulator Device Set, with the provided Path. By default `fbsimctl` will use the 'Default Device Set' that is located at `~/Library/Developer/CoreSimulator/Devices`.
 
 ## Query
@@ -98,7 +99,11 @@ Additionally, it is possible to listen on an interface for incoming commands:
 
 ## Video Recording with Xcode 8
 
-Since Xcode 8, `fbsimctl` can record the video of any booted Simulator, regardless of where it was booted. There's a handy script called [`fbsimrecord` for doing this](../Scripts/README.md). This script is included in the standard install for convenience and quick recall.
+Since Xcode 8, `fbsimctl` can record the video of any booted Simulator, regardless of where it was booted. There's a handy script called [`fbsimrecord` for doing this](../Scripts/README.md). This script is included in the standard install for convenience and quick recall. You an specify the output path of the video, if you wish:
+
+```
+$ fbsimctl record start /tmp/Recorded.mp4
+```
 
 The location of the video file for each booted simulator will be printed to `stdout`. This makes it easy to combine with `open(1)`, `cp(1)` or any other command for further automation. The script itself simple so you can automate in any way that you choose.
 

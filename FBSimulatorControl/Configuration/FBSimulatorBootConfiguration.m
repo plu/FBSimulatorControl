@@ -11,6 +11,10 @@
 
 #import "FBSimulatorScale.h"
 #import "FBFramebufferConfiguration.h"
+#import "FBSimulator.h"
+#import "FBSimulatorError.h"
+
+FBiOSTargetActionType const FBiOSTargetActionTypeBoot = @"boot";
 
 @implementation FBSimulatorBootConfiguration
 
@@ -33,7 +37,7 @@
   return [self initWithOptions:FBSimulatorBootOptionsAwaitServices scale:nil localizationOverride:nil framebuffer:nil];
 }
 
-- (instancetype)initWithOptions:(FBSimulatorBootOptions)options scale:(id<FBSimulatorScale>)scale localizationOverride:(FBLocalizationOverride *)localizationOverride framebuffer:(FBFramebufferConfiguration *)framebuffer
+- (instancetype)initWithOptions:(FBSimulatorBootOptions)options scale:(FBSimulatorScale)scale localizationOverride:(FBLocalizationOverride *)localizationOverride framebuffer:(FBFramebufferConfiguration *)framebuffer
 {
   self = [super init];
   if (!self) {
@@ -89,14 +93,14 @@
   }
 
   return self.options == configuration.options &&
-         (self.scaleString == configuration.scaleString || [self.scaleString isEqualToString:configuration.scaleString]) &&
+         (self.scale == configuration.scale || [self.scale isEqualToString:configuration.scale]) &&
          (self.localizationOverride == configuration.localizationOverride || [self.localizationOverride isEqual:configuration.localizationOverride]) &&
          (self.framebuffer == configuration.framebuffer || [self.framebuffer isEqual:configuration.framebuffer]);
 }
 
 - (NSUInteger)hash
 {
-  return self.options ^ self.scaleString.hash ^ self.localizationOverride.hash ^ self.framebuffer.hash;
+  return self.options ^ self.scale.hash ^ self.localizationOverride.hash ^ self.framebuffer.hash;
 }
 
 #pragma mark FBDebugDescribeable
@@ -105,9 +109,9 @@
 {
   return [NSString stringWithFormat:
     @"Scale %@ | %@ | Options %@ | %@",
-    self.scaleString,
+    self.scale,
     self.localizationOverride ? self.localizationOverride : @"No Locale Override",
-    [FBCollectionInformation oneLineDescriptionFromArray:[FBSimulatorBootConfiguration stringsFromLaunchOptions:self.options]],
+    [FBCollectionInformation oneLineDescriptionFromArray:[FBSimulatorBootConfiguration stringsFromBootOptions:self.options]],
     self.framebuffer ?: @"No Framebuffer"
   ];
 }
@@ -124,26 +128,61 @@
 
 #pragma mark FBJSONSerializable
 
+static NSString *const KeyScale = @"scale";
+static NSString *const KeyLocalizationOverride = @"localization_override";
+static NSString *const KeyOptions = @"options";
+static NSString *const KeyFramebuffer = @"framebuffer";
+
++ (nullable instancetype)inflateFromJSON:(NSDictionary<NSString *, id> *)json error:(NSError **)error
+{
+  FBSimulatorScale scale = [FBCollectionOperations nullableValueForDictionary:json key:KeyScale];
+  if (![scale isKindOfClass:NSString.class]) {
+    return [[FBSimulatorError
+      describeFormat:@"%@ is not a String %@", scale, KeyScale]
+      fail:error];
+  }
+  FBLocalizationOverride *override = nil;
+  NSDictionary<NSString *, id> *localizationDictionary = [FBCollectionOperations nullableValueForDictionary:json key:KeyLocalizationOverride];
+  if (localizationDictionary) {
+    override = [FBLocalizationOverride inflateFromJSON:localizationDictionary error:error];
+    if (!override) {
+      return nil;
+    }
+  }
+  NSDictionary<NSString *, id> *framebufferDictionary = [FBCollectionOperations nullableValueForDictionary:json key:KeyFramebuffer];
+  FBFramebufferConfiguration *framebuffer = nil;
+  if (framebufferDictionary) {
+    framebuffer = [FBFramebufferConfiguration inflateFromJSON:framebufferDictionary error:error];
+    if (!framebuffer) {
+      return nil;
+    }
+  }
+  NSArray<NSString *> *bootOptionsStrings = json[KeyOptions];
+  if (![FBCollectionInformation isArrayHeterogeneous:bootOptionsStrings withClass:NSString.class]) {
+    return [[FBSimulatorError
+      describeFormat:@"%@ is not Array<String> | nil | %@", bootOptionsStrings, KeyOptions]
+      fail:error];
+  }
+  FBSimulatorBootOptions bootOptions = [self bootOptionsFromStrings:bootOptionsStrings];
+
+  return [[self alloc] initWithOptions:bootOptions scale:scale localizationOverride:override framebuffer:framebuffer];
+}
+
 - (NSDictionary *)jsonSerializableRepresentation
 {
   return @{
-    @"scale" : self.scaleString ?: NSNull.null,
-    @"localization_override" : self.localizationOverride.jsonSerializableRepresentation ?: NSNull.null,
-    @"options" : [FBSimulatorBootConfiguration stringsFromLaunchOptions:self.options],
-    @"framebuffer" : self.framebuffer.jsonSerializableRepresentation ?: NSNull.null,
+    KeyScale : self.scale ?: NSNull.null,
+    KeyLocalizationOverride : self.localizationOverride.jsonSerializableRepresentation ?: NSNull.null,
+    KeyOptions : [FBSimulatorBootConfiguration stringsFromBootOptions:self.options],
+    KeyFramebuffer : self.framebuffer.jsonSerializableRepresentation ?: NSNull.null,
   };
 }
 
 #pragma mark Accessors
 
-- (nullable NSString *)scaleString
-{
-  return self.scale.scaleString;
-}
-
 - (nullable NSDecimalNumber *)scaleValue
 {
-  return self.scaleString ? [NSDecimalNumber decimalNumberWithString:self.scaleString] : nil;
+  return self.scale ? [NSDecimalNumber decimalNumberWithString:self.scale] : nil;
 }
 
 #pragma mark Options
@@ -167,7 +206,7 @@
 
 - (instancetype)scale25Percent
 {
-  return [self withScale:FBSimulatorScale_25.new];
+  return [self withScale:FBSimulatorScale25];
 }
 
 + (instancetype)scale50Percent
@@ -177,7 +216,7 @@
 
 - (instancetype)scale50Percent
 {
-  return [self withScale:FBSimulatorScale_50.new];
+  return [self withScale:FBSimulatorScale50];
 }
 
 + (instancetype)scale75Percent
@@ -187,7 +226,7 @@
 
 - (instancetype)scale75Percent
 {
-  return [self withScale:FBSimulatorScale_75.new];
+  return [self withScale:FBSimulatorScale75];
 }
 
 + (instancetype)scale100Percent
@@ -197,15 +236,15 @@
 
 - (instancetype)scale100Percent
 {
-  return [self withScale:FBSimulatorScale_100.new];
+  return [self withScale:FBSimulatorScale100];
 }
 
-+ (instancetype)withScale:(id<FBSimulatorScale>)scale
++ (instancetype)withScale:(FBSimulatorScale)scale
 {
   return [self.defaultConfiguration withScale:scale];
 }
 
-- (instancetype)withScale:(id<FBSimulatorScale>)scale
+- (instancetype)withScale:(FBSimulatorScale)scale
 {
   if (!scale) {
     return self;
@@ -240,19 +279,56 @@
 
 #pragma mark Utility
 
-+ (NSArray<NSString *> *)stringsFromLaunchOptions:(FBSimulatorBootOptions)options
+static NSString *const BootOptionStringConnectBridge = @"Connect Bridge";
+static NSString *const BootOptionStringDirectLaunch = @"Direct Launch";
+static NSString *const BootOptionStringUseNSWorkspace = @"Use NSWorkspace";
+
++ (NSArray<NSString *> *)stringsFromBootOptions:(FBSimulatorBootOptions)options
 {
   NSMutableArray<NSString *> *strings = [NSMutableArray array];
   if ((options & FBSimulatorBootOptionsConnectBridge) == FBSimulatorBootOptionsConnectBridge) {
-    [strings addObject:@"Connect Bridge"];
+    [strings addObject:BootOptionStringConnectBridge];
   }
   if ((options & FBSimulatorBootOptionsEnableDirectLaunch) == FBSimulatorBootOptionsEnableDirectLaunch) {
-    [strings addObject:@"Direct Launch"];
+    [strings addObject:BootOptionStringDirectLaunch];
   }
   if ((options & FBSimulatorBootOptionsUseNSWorkspace) == FBSimulatorBootOptionsUseNSWorkspace) {
-    [strings addObject:@"Use NSWorkspace"];
+    [strings addObject:BootOptionStringUseNSWorkspace];
   }
   return [strings copy];
+}
+
++ (FBSimulatorBootOptions)bootOptionsFromStrings:(NSArray<NSString *> *)strings
+{
+  FBSimulatorBootOptions options = 0;
+  for (NSString *string in strings) {
+    if ([string isEqualToString:BootOptionStringConnectBridge]) {
+      options = options | FBSimulatorBootOptionsConnectBridge;
+    } else if ([string isEqualToString:BootOptionStringDirectLaunch]) {
+      options = options | FBSimulatorBootOptionsEnableDirectLaunch;
+    } else if ([string isEqualToString:BootOptionStringUseNSWorkspace]) {
+      options = options | FBSimulatorBootOptionsUseNSWorkspace;
+    }
+  }
+  return options;
+}
+
+#pragma mark FBiOSTargetAction
+
++ (FBiOSTargetActionType)actionType
+{
+  return FBiOSTargetActionTypeBoot;
+}
+
+- (BOOL)runWithTarget:(id<FBiOSTarget>)target delegate:(id<FBiOSTargetActionDelegate>)delegate error:(NSError **)error
+{
+  if (![target isKindOfClass:FBSimulator.class]) {
+    return [[FBSimulatorError
+      describeFormat:@"%@ cannot be booted", target]
+      failBool:error];
+  }
+  FBSimulator *simulator = (FBSimulator *) target;
+  return [simulator bootSimulator:self error:error];
 }
 
 @end

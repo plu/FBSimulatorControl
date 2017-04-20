@@ -13,7 +13,7 @@ import FBDeviceControl
 
 extension Configuration {
   func buildSimulatorControl() throws -> FBSimulatorControl {
-    let logger = FBControlCoreGlobalConfiguration.defaultLogger()
+    let logger = FBControlCoreGlobalConfiguration.defaultLogger
     try FBSimulatorControlFrameworkLoader.loadPrivateFrameworks(logger)
     let controlConfiguration = FBSimulatorControlConfiguration(deviceSetPath: self.deviceSetPath, options: self.managementOptions)
     return try FBSimulatorControl.withConfiguration(controlConfiguration, logger: logger)
@@ -23,7 +23,7 @@ extension Configuration {
     if case .some = self.deviceSetPath {
       return nil
     }
-    let logger = FBControlCoreGlobalConfiguration.defaultLogger()
+    let logger = FBControlCoreGlobalConfiguration.defaultLogger
     try FBDeviceControlFrameworkLoader.loadEssentialFrameworks(logger)
     return try FBDeviceSet.defaultSet(with: logger)
   }
@@ -122,8 +122,10 @@ struct HelpRunner : Runner {
   let help: Help
 
   func run() -> CommandResult {
-    reporter.reportSimpleBridge(EventName.Help, EventType.Discrete, self.help.description as NSString)
-    return self.help.userInitiated ? .success(nil) : .failure("")
+    if let error = self.help.error {
+      return .failure(error.description)
+    }
+    return .success(self.help.description)
   }
 }
 
@@ -131,19 +133,38 @@ struct CommandRunner : Runner {
   let context: iOSRunnerContext<Command>
 
   func run() -> CommandResult {
+    let command = self.context.value
     var result = CommandResult.success(nil)
-    for action in self.context.value.actions {
+    for action in command.actions {
       guard let query = self.context.value.query ?? self.context.defaults.queryForAction(action) else {
         return CommandResult.failure("No Query Provided")
       }
       let context = self.context.replace((action, query))
       let runner = ActionRunner(context: context)
       result = result.append(runner.run())
-      if case .failure = result {
+      if case .failure = result.outcome {
         return result
       }
     }
+    // Some commands are asynchronous, therefore we need to add a listen
+    if let listenHandle = CommandRunner.shouldAddListen(command: command, result: result) {
+      let listenInterface = ListenInterface(stdin: false, http: nil, hid: nil, handle: listenHandle)
+      let runner = ListenRunner(context: self.context.replace((listenInterface, FBiOSTargetQuery.allTargets())))
+      let _ = runner.run()
+    }
     return result
+  }
+
+  private static func shouldAddListen(command: Command, result: CommandResult) -> FBTerminationHandle? {
+    guard let handle = result.handles.first else {
+      return nil
+    }
+    for action in command.actions {
+      if case .listen = action {
+        return nil
+      }
+    }
+    return handle
   }
 }
 
@@ -157,7 +178,7 @@ struct ActionRunner : Runner {
     switch action {
     case .config:
       let config = FBControlCoreGlobalConfiguration()
-      let subject = SimpleSubject(EventName.Config, EventType.Discrete, ControlCoreSubject(config))
+      let subject = SimpleSubject(.config, .discrete, ControlCoreSubject(config))
       return CommandResult.success(subject)
     case .list:
       let context = self.context.replace(query)
@@ -190,16 +211,25 @@ struct ActionRunner : Runner {
   }
 }
 
-struct ListenRunner : Runner, CommandPerformer {
+struct ListenRunner : Runner, ActionPerformer {
   let context: iOSRunnerContext<(ListenInterface, FBiOSTargetQuery)>
+  let configuration: Configuration
+  let query: FBiOSTargetQuery
+
+  init(context: iOSRunnerContext<(ListenInterface, FBiOSTargetQuery)>) {
+    self.context = context
+    self.configuration = context.configuration
+    self.query = context.value.1
+  }
 
   func run() -> CommandResult {
     do {
-      let relay = SynchronousRelay(relay: try self.makeBaseRelay(), reporter: self.context.reporter) {
-        self.context.reporter.reportSimple(EventName.Listen, EventType.Started, self.context.value.0)
+      let (interface, baseRelay, awaitable) = try self.makeBaseRelay()
+      let relay = SynchronousRelay(relay: baseRelay, reporter: self.context.reporter, awaitable: awaitable) {
+        self.context.reporter.reportSimple(.listen, .started, interface)
       }
       let result = RelayRunner(relay: relay).run()
-      self.context.reporter.reportSimple(EventName.Listen, EventType.Ended, self.context.value.0)
+      self.context.reporter.reportSimple(.listen, .ended, interface)
       return result
     } catch let error as CustomStringConvertible {
       return CommandResult.failure(error.description)
@@ -208,22 +238,33 @@ struct ListenRunner : Runner, CommandPerformer {
     }
   }
 
-  func makeBaseRelay() throws -> Relay {
+  func makeBaseRelay() throws -> (ListenInterface, Relay, FBTerminationAwaitable?) {
     let (interface, query) = self.context.value
+    let interpreter = self.context.reporter.interpreter
     var relays: [Relay] = []
+    var awaitable: FBTerminationAwaitable? = nil
+
+    if interface.isEmptyListen {
+      awaitable = interface.handle as? FBTerminationAwaitable
+    }
     if let httpPort = interface.http {
-      let performer = ActionPerformer(commandPerformer: self, configuration: self.context.configuration, query: query, format: self.context.format)
-      relays.append(HttpRelay(portNumber: httpPort, performer: performer))
+      relays.append(HttpRelay(portNumber: httpPort, performer: self))
     }
     if interface.stdin {
-      let commandBuffer = LineBuffer(performer: self, reporter: self.context.reporter)
-      relays.append(FileHandleRelay(commandBuffer: commandBuffer))
+      let target = try self.context.querySingleSimulator(query)
+      let bridge = ActionReaderDelegateBridge(interpreter: interpreter)
+      let reader = FBiOSActionReader.fileReader(for: target, delegate: bridge, read: FileHandle.standardInput, write: FileHandle.standardOutput)
+      awaitable = reader
+      relays.append(reader)
     }
     if let hidPort = interface.hid {
-      let hid = try self.context.querySingleSimulator(self.context.value.1).connect().connectToHID()
-      relays.append(HIDSocketRelay(portNumber: hidPort, hid: hid))
+      let target = try self.context.querySingleSimulator(query)
+      let bridge = ActionReaderDelegateBridge(interpreter: interpreter)
+      let reader = FBiOSActionReader.socketReader(for: target, delegate: bridge, port: hidPort)
+      awaitable = reader
+      relays.append(reader)
     }
-    return CompositeRelay(relays: relays)
+    return (interface, CompositeRelay(relays: relays), awaitable)
   }
 
   func runnerContext(_ reporter: EventReporter) -> iOSRunnerContext<()> {
@@ -238,9 +279,10 @@ struct ListenRunner : Runner, CommandPerformer {
     )
   }
 
-  func perform(_ command: Command, reporter: EventReporter) -> CommandResult {
-    let context = self.runnerContext(reporter).replace(command)
-    return CommandRunner(context: context).run()
+  func perform(reporter: EventReporter, action: Action, queryOverride: FBiOSTargetQuery?) -> CommandResult {
+    let query = queryOverride ?? self.query
+    let context = self.runnerContext(reporter).replace((action, query))
+    return ActionRunner(context: context).run()
   }
 }
 
@@ -250,7 +292,7 @@ struct ListRunner : Runner {
   func run() -> CommandResult {
     let targets = self.context.query(self.context.value)
     let subjects: [EventReporterSubject] = targets.map { target in
-      SimpleSubject(EventName.List, EventType.Discrete, iOSTargetSubject(target: target, format: self.context.format))
+      SimpleSubject(.list, .discrete, iOSTargetSubject(target: target, format: self.context.format))
     }
     return .success(CompositeSubject(subjects))
   }
@@ -262,7 +304,7 @@ struct ListDeviceSetsRunner : Runner {
   func run() -> CommandResult {
     let deviceSets = self.deviceSets
     let subjects: [EventReporterSubject] = deviceSets.map { deviceSet in
-      SimpleSubject(EventName.ListDeviceSets, EventType.Discrete, deviceSet)
+      SimpleSubject(.listDeviceSets, .discrete, deviceSet)
     }
     return .success(CompositeSubject(subjects))
   }

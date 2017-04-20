@@ -58,8 +58,8 @@ extension Parser {
     }
   }
 
-  public static var ofDirectory: Parser<String> {
-    let desc = PrimitiveDesc(name: "directory", desc: "Path to a directory.")
+  public static var ofExistingDirectory: Parser<String> {
+    let desc = PrimitiveDesc(name: "directory", desc: "Path to an existing directory.")
     return Parser<String>.single(desc) { token  in
       let path = (token as NSString).standardizingPath
       var isDirectory: ObjCBool = false
@@ -73,8 +73,8 @@ extension Parser {
     }
   }
 
-  public static var ofFile: Parser<String> {
-    let desc = PrimitiveDesc(name: "file", desc: "Path to a file.")
+  public static var ofExistingFile: Parser<String> {
+    let desc = PrimitiveDesc(name: "file", desc: "Path to an existing file.")
     return Parser<String>.single(desc) { token in
       let path = (token as NSString).standardizingPath
       var isDirectory: ObjCBool = false
@@ -85,6 +85,18 @@ extension Parser {
         throw ParseError.custom("'\(path)' should be a file, but isn't")
       }
       return path
+    }
+  }
+
+  public static var ofFile: Parser<String> {
+    let desc = PrimitiveDesc(name: "file", desc: "Path to a file.")
+    return Parser<String>.single(desc) { token in
+      do {
+        let _ = try Parser.ofDashSeparator.parse([token])
+      } catch is ParseError {
+        return token
+      }
+      throw ParseError.custom("Not a File Path")
     }
   }
 
@@ -225,7 +237,7 @@ extension Configuration : Parsable {
 
   static var deviceSetPathParser: Parser<Configuration> {
     return Parser<Configuration>
-      .ofFlagWithArg("set", Parser<Any>.ofDirectory, "")
+      .ofFlagWithArg("set", Parser<Any>.ofExistingDirectory, "")
       .fmap(Configuration.ofDeviceSetPath)
   }
 }
@@ -239,46 +251,46 @@ extension IndividualCreationConfiguration : Parsable {
     ])
   }
 
-  static var deviceParser: Parser<FBControlCoreConfiguration_Device> {
+  static var deviceParser: Parser<FBDeviceModel> {
     let desc = PrimitiveDesc(name: "device-name", desc: "Device Name.")
 
     return Parser.single(desc) { token in
       let nameToDevice = FBControlCoreConfigurationVariants.nameToDevice
-      let deviceName = FBDeviceName(rawValue: token)
-      guard let device = nameToDevice[deviceName] else {
+      let deviceName = FBDeviceModel(rawValue: token)
+      guard let _ = nameToDevice[deviceName] else {
         throw ParseError.custom("\(token) is not a valid device name")
       }
-      return device
+      return deviceName
     }
   }
 
   static var deviceConfigurationParser: Parser<IndividualCreationConfiguration> {
     return self.deviceParser.fmap { device in
       return IndividualCreationConfiguration(
-        osVersion: nil,
-        deviceType: device,
+        os: nil,
+        model: device,
         auxDirectory: nil
       )
     }
   }
 
-  static var osVersionParser: Parser<FBControlCoreConfiguration_OS> {
+  static var osVersionParser: Parser<FBOSVersionName> {
     let desc = PrimitiveDesc(name: "os-version", desc: "OS Version.")
     return Parser.single(desc) { token in
       let nameToOSVersion = FBControlCoreConfigurationVariants.nameToOSVersion
       let osVersionName = FBOSVersionName(rawValue: token)
-      guard let osVersion = nameToOSVersion[osVersionName] else {
+      guard let _ = nameToOSVersion[osVersionName] else {
         throw ParseError.custom("\(token) is not a valid device name")
       }
-      return osVersion
+      return osVersionName
     }
   }
 
   static var osVersionConfigurationParser: Parser<IndividualCreationConfiguration> {
     return self.osVersionParser.fmap { osVersion in
       return IndividualCreationConfiguration(
-        osVersion: osVersion,
-        deviceType: nil,
+        os: osVersion,
+        model: nil,
         auxDirectory: nil
       )
     }
@@ -286,14 +298,14 @@ extension IndividualCreationConfiguration : Parsable {
 
   static var auxDirectoryParser: Parser<String> {
     return Parser<String>
-      .ofFlagWithArg("aux", Parser<Any>.ofDirectory, "")
+      .ofFlagWithArg("aux", Parser<Any>.ofExistingDirectory, "")
   }
 
   static var auxDirectoryConfigurationParser: Parser<IndividualCreationConfiguration> {
     return self.auxDirectoryParser.fmap { auxDirectory in
       return IndividualCreationConfiguration(
-        osVersion: nil,
-        deviceType: nil,
+        os: nil,
+        model: nil,
         auxDirectory: auxDirectory
       )
     }
@@ -307,27 +319,28 @@ extension CreationSpecification : Parsable {
         .ofFlag("all-missing-defaults",
                 CreationSpecification.allMissingDefaults,
                 ""),
-      IndividualCreationConfiguration.parser.fmap { CreationSpecification.individual($0) },
+      IndividualCreationConfiguration.parser.fmap(CreationSpecification.individual),
     ])
   }
 }
 
 extension FBSimulatorState : Parsable {
   public static var parser: Parser<FBSimulatorState> {
-    return Parser.alternative([
-        stateFlag("creating", FBSimulatorState.creating, ""),
-        stateFlag("shutdown", FBSimulatorState.shutdown, ""),
-        stateFlag("booting", FBSimulatorState.booting, ""),
-        stateFlag("booted", FBSimulatorState.booted, ""),
-        stateFlag("shutting-down", FBSimulatorState.shuttingDown, "")
-    ])
-  }
-
-  static func stateFlag(_ stateLabel: String,
-                        _ state: FBSimulatorState,
-                        _ explain: String) -> Parser<FBSimulatorState> {
-    return Parser<FBSimulatorState>
-      .ofFlag("state=" + stateLabel, state, explain)
+    let names = [
+      ("creating", FBSimulatorState.creating),
+      ("shutdown", FBSimulatorState.shutdown),
+      ("booting", FBSimulatorState.booting),
+      ("booted", FBSimulatorState.booted),
+      ("shutting-down", FBSimulatorState.shuttingDown)
+    ]
+    let stateParsers = names.map { (name, state) in
+      return Parser.ofString(name, state)
+    }
+    return Parser<FBSimulatorState>.ofFlagWithArg(
+      "state",
+      Parser.alternative(stateParsers),
+      "A Simulator State"
+    )
   }
 }
 
@@ -360,13 +373,22 @@ extension CLI : Parsable {
   public static var parser: Parser<CLI> {
     return Parser
       .alternative([
-        Command.parser.fmap { CLI.run($0) }.topLevel,
-        Help.parser.fmap { CLI.show($0) }.topLevel,
+        self.printParser.topLevel,
+        Command.parser.fmap(CLI.run).topLevel,
+        Help.parser.fmap(CLI.show).topLevel,
       ])
       .withExpandedDesc
       .sectionize(
         "fbsimctl", "Help",
-        "fbsimctl is a Mac OS X library for managing and manipulating iOS Simulators")
+        "fbsimctl is a Mac OS X library for managing and manipulating iOS Simulators"
+      )
+  }
+
+  private static var printParser: Parser<CLI> {
+    return Parser
+      .ofString("print", NSNull())
+      .sequence(Action.parser)
+      .fmap(CLI.print)
   }
 }
 
@@ -378,7 +400,7 @@ extension Help : Parsable {
         Parser.ofString("help", NSNull())
       )
       .fmap { (output, _) in
-        return Help(outputOptions: output, userInitiated: true, command: nil)
+        return Help(outputOptions: output, error: nil, command: nil)
       }
   }
 }
@@ -421,19 +443,19 @@ extension ListenInterface : Parsable {
 
   static var stdinParser: Parser<ListenInterface> {
     return Parser<ListenInterface>
-      .ofFlag("stdin", ListenInterface(stdin: true, http: nil, hid: nil), "Listen for commands on stdin")
+      .ofFlag("stdin", ListenInterface(stdin: true, http: nil, hid: nil, handle: nil), "Listen for commands on stdin")
   }
 
   static var httpParser:  Parser<ListenInterface> {
     return Parser<ListenInterface>
       .ofFlagWithArg("http", portParser, "The HTTP Port to listen on")
-      .fmap { ListenInterface(stdin: false, http: $0, hid: nil) }
+      .fmap { ListenInterface(stdin: false, http: $0, hid: nil, handle: nil) }
   }
 
   static var hidParser: Parser<ListenInterface> {
     return Parser<ListenInterface>
       .ofFlagWithArg("hid", portParser, "The HID Port to listen on")
-      .fmap { ListenInterface(stdin: false, http: nil, hid: $0) }
+      .fmap { ListenInterface(stdin: false, http: nil, hid: $0, handle: nil) }
   }
 
   private static var portParser: Parser<UInt16> {
@@ -446,6 +468,33 @@ extension ListenInterface : Parsable {
   }
 }
 
+extension Record : Parsable {
+  public static var parser: Parser<Record> {
+    return Parser.alternative([
+      self.startParser,
+      self.stopParser
+    ])
+  }
+
+  private static var startParser: Parser<Record> {
+    return Parser
+      .ofCommandWithArg("start", Parser<String>.ofFile.optional())
+      .fmap { Record.start($0) }
+  }
+
+  private static var stopParser: Parser<Record> {
+    return Parser.ofString("stop", Record.stop)
+  }
+}
+
+extension FileOutput : Parsable {
+  public static var parser: Parser<FileOutput> {
+    return Parser.alternative([
+      Parser.ofString("-", FileOutput.standardOut),
+      Parser<FileOutput>.ofFile.fmap(FileOutput.path),
+    ])
+  }
+}
 
 extension Action : Parsable {
   public static var parser: Parser<Action> {
@@ -459,6 +508,7 @@ extension Action : Parsable {
         self.deleteParser,
         self.diagnoseParser,
         self.eraseParser,
+        self.focusParser,
         self.installParser,
         self.keyboardOverrideParser,
         self.launchAgentParser,
@@ -474,6 +524,7 @@ extension Action : Parsable {
         self.serviceInfoParser,
         self.setLocationParser,
         self.shutdownParser,
+        self.streamParser,
         self.tapParser,
         self.terminateParser,
         self.uninstallParser,
@@ -486,47 +537,56 @@ extension Action : Parsable {
 
   static var approveParser: Parser<Action> {
     return Parser<[String]>
-      .ofCommandWithArg(EventName.Approve.rawValue,
-                        Parser.manyCount(1, Parser<String>.ofBundleIDOrApplicationDescriptorBundleID))
-      .fmap { Action.approve($0) }
+      .ofCommandWithArg(
+        EventName.approve.rawValue,
+        Parser.manyCount(1, Parser<String>.ofBundleIDOrApplicationDescriptorBundleID)
+      )
+      .fmap(Action.approve)
       .sectionize("approve", "Action: Approve", "")
   }
 
   static var bootParser: Parser<Action> {
-    return Parser<FBSimulatorBootConfiguration?>
-      .ofCommandWithArg(EventName.Boot.rawValue,
-                        FBSimulatorBootConfigurationParser.parser.optional())
-      .fmap { Action.boot($0) }
+    return Parser<FBSimulatorBootConfiguration>
+      .ofCommandWithArg(
+        EventName.boot.rawValue,
+        FBSimulatorBootConfigurationParser.parser.fallback(FBSimulatorBootConfiguration.default())
+      )
+      .fmap(Action.boot)
       .sectionize("boot", "Action: Boot", "")
   }
 
   static var clearKeychainParser: Parser<Action> {
     return Parser<String?>
-      .ofCommandWithArg(EventName.ClearKeychain.rawValue,
-                        Parser<String>.ofBundleIDOrApplicationDescriptorBundleID.optional())
-      .fmap { Action.clearKeychain($0) }
+      .ofCommandWithArg(
+        EventName.clearKeychain.rawValue,
+        Parser<String>.ofBundleIDOrApplicationDescriptorBundleID.optional()
+      )
+      .fmap(Action.clearKeychain)
       .sectionize("clear_keychain", "Action: Clear Keychain", "")
   }
 
   static var configParser: Parser<Action> {
-    return Parser.ofString(EventName.Config.rawValue, Action.config)
+    return Parser.ofString(EventName.config.rawValue, Action.config)
   }
 
   static var createParser: Parser<Action> {
     return Parser<CreationSpecification>
-      .ofCommandWithArg(EventName.Create.rawValue, CreationSpecification.parser)
-      .fmap { Action.create($0) }
+      .ofCommandWithArg(
+        EventName.create.rawValue,
+        CreationSpecification.parser
+      )
+      .fmap(Action.create)
       .sectionize("create", "Action: Create", "")
   }
 
   static var deleteParser: Parser<Action> {
-    return Parser.ofString(EventName.Delete.rawValue, Action.delete)
+    return Parser.ofString(EventName.delete.rawValue, Action.delete)
   }
 
   static var diagnoseParser: Parser<Action> {
     return Parser<(DiagnosticFormat, FBDiagnosticQuery)>
       .ofCommandWithArg(
-        EventName.Diagnose.rawValue,
+        EventName.diagnose.rawValue,
         Parser.ofTwoSequenced(
           DiagnosticFormat.parser.fallback(DiagnosticFormat.CurrentFormat),
           FBDiagnosticQueryParser.parser
@@ -539,37 +599,41 @@ extension Action : Parsable {
   }
 
   static var eraseParser: Parser<Action> {
-    return Parser.ofString(EventName.Erase.rawValue, Action.erase)
+    return Parser.ofString(EventName.erase.rawValue, Action.erase)
+  }
+
+  static var focusParser: Parser<Action> {
+    return Parser.ofString(EventName.focus.rawValue, Action.focus)
   }
 
   static var launchAgentParser: Parser<Action> {
     return Parser<FBAgentLaunchConfiguration>
       .ofCommandWithArg(
-        EventName.Launch.rawValue,
+        EventName.launch.rawValue,
         FBProcessLaunchConfigurationParsers.agentLaunchParser
       )
-      .fmap { Action.launchAgent($0) }
+      .fmap(Action.launchAgent)
       .sectionize("launch(agent)", "Action: Launch (Agent)", "")
   }
 
   static var launchAppParser: Parser<Action> {
     return Parser<FBApplicationLaunchConfiguration>
       .ofCommandWithArg(
-        EventName.Launch.rawValue,
+        EventName.launch.rawValue,
         FBProcessLaunchConfigurationParsers.appLaunchParser
       )
-      .fmap { Action.launchApp($0) }
+      .fmap(Action.launchApp)
       .sectionize("launch(app)", "Action: Launch (App)", "")
   }
 
   static var launchXCTestParser: Parser<Action> {
-        let optionalTimeoutFlag = Parser<Double>
-      .ofFlagWithArg("test-timeout", Parser<Double>.ofDouble, "")
-      .optional()
+      let optionalTimeoutFlag = Parser<Double>
+        .ofFlagWithArg("test-timeout", Parser<Double>.ofDouble, "")
+        .optional()
 
     let parser = Parser.ofThreeSequenced(
       optionalTimeoutFlag,
-      Parser<Any>.ofDirectory,
+      Parser<Any>.ofExistingDirectory,
       FBProcessLaunchConfigurationParsers.appLaunchAndApplicationDescriptorParser
     )
 
@@ -591,84 +655,93 @@ extension Action : Parsable {
 
     return Parser
       .ofCommandWithArg(
-        EventName.LaunchXCTest.rawValue,
-        configurationParser)
-      .fmap { Action.launchXCTest($0) }
+        EventName.launchXCTest.rawValue,
+        configurationParser
+      )
+      .fmap(Action.launchXCTest)
       .sectionize("launch_xctest", "Action: Launch XCTest", "")
   }
 
   static var listenParser: Parser<Action> {
     return Parser<ListenInterface>
-      .ofCommandWithArg(EventName.Listen.rawValue, ListenInterface.parser)
-      .fmap { Action.listen($0) }
+      .ofCommandWithArg(
+        EventName.listen.rawValue,
+        ListenInterface.parser
+      )
+      .fmap(Action.listen)
       .sectionize("listen", "Action: Listen", "")
   }
 
   static var listParser: Parser<Action> {
-    return Parser.ofString(EventName.List.rawValue, Action.list)
+    return Parser.ofString(EventName.list.rawValue, Action.list)
   }
 
   static var listAppsParser: Parser<Action> {
-    return Parser.ofString(EventName.ListApps.rawValue, Action.listApps)
+    return Parser.ofString(EventName.listApps.rawValue, Action.listApps)
   }
 
   static var listDeviceSetsParser: Parser<Action> {
-    return Parser.ofString(EventName.ListDeviceSets.rawValue, Action.listDeviceSets)
+    return Parser.ofString(EventName.listDeviceSets.rawValue, Action.listDeviceSets)
   }
 
   static var openParser: Parser<Action> {
     return Parser<URL>
       .ofCommandWithArg(
-        EventName.Open.rawValue,
+        EventName.open.rawValue,
         Parser<URL>.ofURL
       )
-      .fmap { Action.open($0) }
+      .fmap(Action.open)
   }
 
   static var installParser: Parser<Action> {
-    return Parser<String>
-      .ofCommandWithArg(EventName.Install.rawValue, Parser<String>.ofAny)
-      .fmap { Action.install($0, false) }
+    return Parser
+      .ofTwoSequenced(
+        Parser<String>.ofCommandWithArg(EventName.install.rawValue, Parser<String>.ofAny),
+        Parser<Bool>.ofFlag("codesign",
+          "Before installing, sign the bundle and all its frameworks with a certificate from the keychain"
+        )
+      )
+      .fmap { (path, shouldCodesign) in
+        Action.install(path, shouldCodesign)
+      }
   }
 
   static var keyboardOverrideParser: Parser<Action> {
-    return Parser.ofString(EventName.KeyboardOverride.rawValue, Action.keyboardOverride)
+    return Parser.ofString(EventName.keyboardOverride.rawValue, Action.keyboardOverride)
   }
 
   static var relaunchParser: Parser<Action> {
     return Parser<FBApplicationLaunchConfiguration>
-      .ofCommandWithArg(EventName.Relaunch.rawValue,
-                        FBProcessLaunchConfigurationParsers.appLaunchParser)
-      .fmap { Action.relaunch($0) }
+      .ofCommandWithArg(
+        EventName.relaunch.rawValue,
+        FBProcessLaunchConfigurationParsers.appLaunchParser
+      )
+      .fmap(Action.relaunch)
       .sectionize("relaunch", "Action: Relaunch", "")
   }
 
   static var recordParser: Parser<Action> {
-    let startStopParser: Parser<Bool> = Parser.alternative([
-      Parser.ofString("start", true),
-      Parser.ofString("stop", false)
-    ])
-
-    return Parser<Bool>
-      .ofCommandWithArg(EventName.Record.rawValue, startStopParser)
-      .fmap { Action.record($0) }
+    return Parser<Record>
+      .ofCommandWithArg(EventName.record.rawValue, Record.parser)
+      .fmap(Action.record)
   }
 
   static var shutdownParser: Parser<Action> {
-    return Parser.ofString(EventName.Shutdown.rawValue, Action.shutdown)
+    return Parser.ofString(EventName.shutdown.rawValue, Action.shutdown)
   }
 
   static var tapParser: Parser<Action> {
-    let coordParser: Parser<(Double, Double)> = Parser
-      .ofTwoSequenced(Parser<Double>.ofDouble,
-                      Parser<Double>.ofDouble)
+    let coordParser: Parser<(Double, Double)> = Parser.ofTwoSequenced(
+      Parser<Double>.ofDouble,
+      Parser<Double>.ofDouble
+    )
 
     return Parser
       .ofCommandWithArg(
-        EventName.Tap.rawValue,
+        EventName.tap.rawValue,
         coordParser
       )
-      .fmap { (x,y) in
+      .fmap { (x, y) in
         Action.tap(x, y)
       }
   }
@@ -676,7 +749,7 @@ extension Action : Parsable {
   static var serviceInfoParser: Parser<Action> {
     return Parser
       .ofCommandWithArg(
-        EventName.ServiceInfo.rawValue,
+        EventName.serviceInfo.rawValue,
         Parser<String>.ofBundleIDOrApplicationDescriptorBundleID
       )
       .fmap(Action.serviceInfo)
@@ -689,7 +762,7 @@ extension Action : Parsable {
 
     return Parser
       .ofCommandWithArg(
-        EventName.SetLocation.rawValue,
+        EventName.setLocation.rawValue,
         latLngParser
       )
       .fmap { (latitude, longitude) in
@@ -697,25 +770,35 @@ extension Action : Parsable {
       }
   }
 
+  static var streamParser: Parser<Action> {
+    return Parser
+      .ofCommandWithArg(EventName.stream.rawValue, FileOutput.parser.optional())
+      .fmap(Action.stream)
+  }
+
   static var terminateParser: Parser<Action> {
     return Parser<String>
-      .ofCommandWithArg(EventName.Terminate.rawValue,
-                        Parser<String>.ofBundleIDOrApplicationDescriptorBundleID)
-      .fmap { Action.terminate($0) }
+      .ofCommandWithArg(
+        EventName.terminate.rawValue,
+        Parser<String>.ofBundleIDOrApplicationDescriptorBundleID
+      )
+      .fmap(Action.terminate)
   }
 
   static var uninstallParser: Parser<Action> {
     return Parser<String>
-      .ofCommandWithArg(EventName.Uninstall.rawValue,
-                        Parser<String>.ofBundleIDOrApplicationDescriptorBundleID)
-      .fmap { Action.uninstall($0) }
+      .ofCommandWithArg(
+        EventName.uninstall.rawValue,
+        Parser<String>.ofBundleIDOrApplicationDescriptorBundleID
+      )
+      .fmap(Action.uninstall)
   }
 
   static var uploadParser: Parser<Action> {
     return Parser<[String]>
       .ofCommandWithArg(
-        EventName.Upload.rawValue,
-        Parser.manyCount(1, Parser<String>.ofFile)
+        EventName.upload.rawValue,
+        Parser.manyCount(1, Parser<String>.ofExistingFile)
       )
       .fmap { paths in
         let diagnostics: [FBDiagnostic] = paths.map { path in
@@ -728,7 +811,7 @@ extension Action : Parsable {
   static var watchdogOverrideParser: Parser<Action> {
     return Parser<(Double, [String])>
       .ofCommandWithArg(
-        EventName.WatchdogOverride.rawValue,
+        EventName.watchdogOverride.rawValue,
         Parser.ofTwoSequenced(
           Parser<Double>.ofDouble,
           Parser.manyCount(1, Parser<String>.ofBundleIDOrApplicationDescriptorBundleID)
@@ -758,18 +841,13 @@ extension DiagnosticFormat : Parsable {
 
 public struct FBiOSTargetFormatParsers {
   public static var parser: Parser<FBiOSTargetFormat> {
-    let parsers = FBiOSTargetFormatKey.allFields.map { field in
-      return Parser.ofString("--" + field.rawValue, field)
-    }
-
-    let altParser = Parser
-      .alternative(parsers)
-      .sectionize("target-format", "Target Format", "")
-
-    return Parser
-      .manyCount(1, altParser)
-      .fmap { FBiOSTargetFormat(fields: $0) }
-    }
+    let description = PrimitiveDesc(name: "Target Format", desc: "An iOS Target Format")
+    return Parser<FBiOSTargetFormat>.ofFlagWithArg(
+      "format",
+      Parser.single(description, f: FBiOSTargetFormat.init),
+      "An iOS Target Format"
+    )
+  }
 }
 
 public struct FBiOSTargetQueryParsers {
@@ -778,8 +856,7 @@ public struct FBiOSTargetQueryParsers {
       self.allParser,
       self.unionParser
     ])
-      .sectionize("targets", "Targets",
-                  "")
+    .sectionize("targets", "Targets", "")
   }
 
   static var allParser: Parser<FBiOSTargetQuery> {
@@ -795,31 +872,42 @@ public struct FBiOSTargetQueryParsers {
     return Parser.alternative([
       self.firstParser,
       self.uuidParser,
+      self.nameParser,
       self.simulatorStateParser,
       self.architectureParser,
       self.targetTypeParser,
       self.osVersionsParser,
       self.deviceParser
     ])
-      .sectionize("targets/query", "Target: Queries", "")
+    .sectionize("targets/query", "Target: Queries", "")
   }
 
   static var firstParser: Parser<FBiOSTargetQuery> {
     return Parser<Int>
       .ofFlagWithArg("first", Parser<Int>.ofInt, "")
-      .fmap { FBiOSTargetQuery.ofCount($0) }
+      .fmap(FBiOSTargetQuery.ofCount)
   }
 
   static var uuidParser: Parser<FBiOSTargetQuery> {
     return Parser<FBiOSTargetQuery>
       .ofUDID
-      .fmap { FBiOSTargetQuery.udids([$0]) }
+      .fmap(FBiOSTargetQuery.udid)
+  }
+
+  static var nameParser: Parser<FBiOSTargetQuery> {
+    let parser: (String) -> FBiOSTargetQuery = FBiOSTargetQuery.named
+    let description = PrimitiveDesc(name: "name", desc: "An iOS Target Name")
+    return Parser<FBiOSTargetQuery>.ofFlagWithArg(
+      "name",
+      Parser.single(description, f: parser),
+      "An iOS Target Name"
+    )
   }
 
   static var architectureParser: Parser<FBiOSTargetQuery> {
     return Parser<FBArchitecture>
       .alternative(FBArchitecture.allFields.map(architectureSubparser))
-      .fmap { FBiOSTargetQuery.architectures([$0]) }
+      .fmap(FBiOSTargetQuery.architecture)
   }
 
   static func architectureSubparser(_ architecture: FBArchitecture) -> Parser<FBArchitecture> {
@@ -830,25 +918,25 @@ public struct FBiOSTargetQueryParsers {
   static var simulatorStateParser: Parser<FBiOSTargetQuery> {
     return FBSimulatorState
       .parser
-      .fmap { FBiOSTargetQuery.simulatorStates([$0]) }
+      .fmap(FBiOSTargetQuery.state)
   }
 
   static var targetTypeParser: Parser<FBiOSTargetQuery> {
     return FBiOSTargetType
       .parser
-      .fmap { FBiOSTargetQuery.targetType($0) }
+      .fmap(FBiOSTargetQuery.targetType)
   }
 
   static var osVersionsParser: Parser<FBiOSTargetQuery> {
     return IndividualCreationConfiguration
       .osVersionParser
-      .fmap { FBiOSTargetQuery.osVersions([$0]) }
+      .fmap(FBiOSTargetQuery.osVersion)
   }
 
   static var deviceParser: Parser<FBiOSTargetQuery> {
     return IndividualCreationConfiguration
       .deviceParser
-      .fmap { FBiOSTargetQuery.devices([$0]) }
+      .fmap(FBiOSTargetQuery.device)
   }
 }
 
@@ -914,8 +1002,8 @@ struct FBSimulatorBootConfigurationParser {
   static var parser: Parser<FBSimulatorBootConfiguration> {
     return Parser<FBSimulatorBootConfiguration>
       .accumulate(1, [
-        self.optionsParser.fmap { FBSimulatorBootConfiguration.withOptions($0) },
-        self.scaleParser.fmap { FBSimulatorBootConfiguration.withScale($0) },
+        self.optionsParser.fmap(FBSimulatorBootConfiguration.withOptions),
+        self.scaleParser.fmap(FBSimulatorBootConfiguration.withScale),
         self.localeParser.fmap { FBSimulatorBootConfiguration.withLocalizationOverride(FBLocalizationOverride.withLocale($0)) }
       ])
       .fmap { configuration in
@@ -934,13 +1022,13 @@ struct FBSimulatorBootConfigurationParser {
   static var scaleParser: Parser<FBSimulatorScale> {
     let subparsers: [Parser<FBSimulatorScale>] = [
       Parser<FBSimulatorScale>
-        .ofFlag("scale=25", FBSimulatorScale_25(), ""),
+        .ofFlag("scale=25", .scale25, ""),
       Parser<FBSimulatorScale>
-        .ofFlag("scale=50", FBSimulatorScale_50(), ""),
+        .ofFlag("scale=50", .scale50, ""),
       Parser<FBSimulatorScale>
-        .ofFlag("scale=75", FBSimulatorScale_75(), ""),
+        .ofFlag("scale=75", .scale75, ""),
       Parser<FBSimulatorScale>
-        .ofFlag("scale=100", FBSimulatorScale_100(), "")
+        .ofFlag("scale=100", .scale100, "")
     ]
 
     return Parser.alternative(subparsers)
@@ -966,15 +1054,22 @@ struct FBSimulatorBootConfigurationParser {
 struct FBProcessLaunchConfigurationParsers {
   static var appLaunchAndApplicationDescriptorParser: Parser<(FBApplicationLaunchConfiguration, FBApplicationDescriptor?)> {
     return Parser
-      .ofThreeSequenced(
+      .ofFourSequenced(
         FBProcessOutputConfigurationParser.parser,
+        self.waitForDebuggerParser,
         Parser<Any>.ofBundleIDOrApplicationDescriptor,
         self.argumentParser
       )
-      .fmap { (output, bundleIDOrApplicationDescriptor, arguments) in
+      .fmap { (output, waitForDebugger, bundleIDOrApplicationDescriptor, arguments) in
         let (bundleId, appDescriptor) = bundleIDOrApplicationDescriptor
         return (
-          FBApplicationLaunchConfiguration(bundleID: bundleId, bundleName: nil, arguments: arguments, environment : [:], output: output),
+          FBApplicationLaunchConfiguration(
+            bundleID: bundleId,
+            bundleName: nil,
+            arguments: arguments,
+            environment: [:],
+            waitForDebugger: waitForDebugger,
+            output: output),
           appDescriptor
         )
       }
@@ -1002,6 +1097,15 @@ struct FBProcessLaunchConfigurationParsers {
         Parser<NSNull>.ofDashSeparator,
         Parser<String>.ofAny
       )
+  }
+
+  static var waitForDebuggerParser: Parser<Bool> {
+    return Parser<Bool>
+      .alternative([
+        Parser<Bool>.ofString("--wait-for-debugger", true),
+        Parser<Bool>.ofString("-w", true)
+      ])
+      .fallback(false)
   }
 }
 
